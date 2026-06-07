@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Court Craft Journal</title>
 
-    <!-- Modular CSS Files -->
     <link rel="stylesheet" href="base.css">
     <link rel="stylesheet" href="auth.css">
     <link rel="stylesheet" href="layout.css">
@@ -16,7 +15,7 @@
     <style>
         /* ── Admin panel strip ────────────────────────────────────────────── */
         #adminPanel {
-            display: none; /* shown via auth.js when admin logs in */
+            display: none;
             align-items: center;
             justify-content: center;
             gap: 0.75rem;
@@ -26,7 +25,7 @@
             padding: 0.625rem 1.5rem;
         }
 
-        #adminPanel span {
+        #adminPanel span.admin-label {
             color: #94a3b8;
             font-size: 0.8125rem;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -47,13 +46,10 @@
             width: auto;
         }
 
-        .admin-btn:hover {
-            background: #475569;
-        }
+        .admin-btn:hover { background: #475569; }
 
-        /* Small badge next to the user email in the header */
         #adminBadge {
-            display: none; /* shown via auth.js */
+            display: none;
             background: #f59e0b;
             color: #0f172a;
             font-size: 0.6875rem;
@@ -65,11 +61,156 @@
             margin-left: 0.5rem;
             vertical-align: middle;
         }
+
+        /* ── Add Player modal ─────────────────────────────────────────────── */
+        #addPlayerModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,0.6);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        #addPlayerModal.open { display: flex; }
+
+        .modal-box {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 20px 25px -5px rgba(15,23,42,0.2);
+            padding: 2rem;
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .modal-box h3 {
+            margin-bottom: 0.25rem;
+            font-size: 1.1rem;
+            color: #0f172a;
+        }
+
+        .modal-box p.modal-hint {
+            font-size: 0.8125rem;
+            color: #64748b;
+            margin-bottom: 1.25rem;
+            line-height: 1.55;
+        }
+
+        .modal-box label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #475569;
+            margin-bottom: 0.25rem;
+            margin-top: 0.875rem;
+        }
+
+        .modal-box input[type="text"],
+        .modal-box input[type="email"] {
+            width: 100%;
+            padding: 0.6rem 0.875rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            font-size: 0.9375rem;
+            background: #f8fafc;
+            color: #0f172a;
+            margin-bottom: 0;
+        }
+
+        .modal-box input:focus {
+            border-color: #1e293b;
+            outline: none;
+            background: white;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            justify-content: flex-end;
+        }
+
+        .modal-cancel {
+            background: white;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0;
+            width: auto;
+        }
+
+        .modal-cancel:hover { background: #f1f5f9; }
+
+        .modal-save {
+            background: #1e293b;
+            color: white;
+            border: none;
+            padding: 0.5rem 1.25rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0;
+            width: auto;
+        }
+
+        .modal-save:hover { background: #334155; }
+
+        /* Player list inside modal */
+        #playerListContainer {
+            margin-top: 1.25rem;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1rem;
+        }
+
+        #playerListContainer h4 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #94a3b8;
+            margin-bottom: 0.625rem;
+        }
+
+        .player-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.4rem 0.625rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            color: #334155;
+            background: #f8fafc;
+            margin-bottom: 0.375rem;
+        }
+
+        .player-row span { font-family: monospace; font-size: 0.75rem; color: #94a3b8; }
+
+        .player-remove {
+            background: none;
+            border: none;
+            color: #dc2626;
+            cursor: pointer;
+            font-size: 0.8125rem;
+            padding: 0;
+            margin: 0;
+            width: auto;
+            line-height: 1;
+        }
+
+        .player-remove:hover { background: none; color: #991b1b; }
     </style>
 </head>
 <body>
 
-    <!-- ── Authentication Screen ─────────────────────────────────────────── -->
+    <!-- ── Authentication Screen ──────────────────────────────────────────── -->
     <div id="authScreen" class="auth-screen">
         <div class="auth-container">
             <div class="auth-header">
@@ -77,7 +218,6 @@
                 <p>Track your squash performance and improve your game</p>
             </div>
 
-            <!-- Login Form -->
             <div id="loginForm" class="auth-form">
                 <h2>Welcome Back</h2>
                 <form onsubmit="handleLogin(event)">
@@ -98,7 +238,6 @@
                 </p>
             </div>
 
-            <!-- Signup Form -->
             <div id="signupForm" class="auth-form" style="display: none;">
                 <h2>Create Account</h2>
                 <form onsubmit="handleSignup(event)">
@@ -125,11 +264,10 @@
         </div>
     </div>
 
-    <!-- ── Main Application (hidden until logged in) ──────────────────────── -->
+    <!-- ── Main Application ───────────────────────────────────────────────── -->
     <div id="mainApp" style="display: none;">
         <div class="container">
 
-            <!-- Header -->
             <div class="header">
                 <h1>Daily Sports Performance Journal</h1>
                 <p>Track your performance and discover what makes you succeed</p>
@@ -140,18 +278,20 @@
                 </div>
             </div>
 
-            <!-- Admin Panel (only visible to the admin account) -->
+            <!-- Admin Panel -->
             <div id="adminPanel">
-                <span>🛡 Admin View</span>
+                <span class="admin-label">🛡 Admin</span>
                 <button class="admin-btn" onclick="loadAllUsersEntries()">
-                    👁 View All Players' Entries
+                    👁 View All Players
+                </button>
+                <button class="admin-btn" onclick="openAddPlayerModal()">
+                    ➕ Manage Players
                 </button>
                 <button class="admin-btn" onclick="if(window.loadHistory) loadHistory()">
-                    ↩ Back to My View
+                    ↩ My View
                 </button>
             </div>
 
-            <!-- Tabs -->
             <div class="tabs">
                 <div class="tab active" onclick="switchTab('journal')">New Entry</div>
                 <div class="tab" onclick="switchTab('history')">History</div>
@@ -159,7 +299,7 @@
 
             <div class="content">
 
-                <!-- ── Journal / Entry Form ──────────────────────────────── -->
+                <!-- Journal Form -->
                 <div id="journal" class="view active">
                     <div class="quick-actions">
                         <button class="quick-btn" onclick="clearForm()">Clear Form</button>
@@ -233,7 +373,7 @@
                     <button onclick="cancelEdit()" id="cancelBtn" class="btn-secondary" style="display: none;">Cancel Edit</button>
                 </div>
 
-                <!-- ── History View ───────────────────────────────────────── -->
+                <!-- History View -->
                 <div id="history" class="view">
                     <div class="export-section">
                         <button onclick="showImportDialog()">Import Entries</button>
@@ -242,12 +382,10 @@
 
                     <div class="filter-section">
                         <h2>Search &amp; Filter</h2>
-
                         <div class="search-box">
                             <label for="searchKeyword">Search</label>
                             <input type="text" id="searchKeyword" placeholder="Search entries..." oninput="debouncedSearch()">
                         </div>
-
                         <div class="filter-row">
                             <div class="filter-group">
                                 <label for="dateRange">Date Range</label>
@@ -261,7 +399,6 @@
                                 </select>
                             </div>
                         </div>
-
                         <div class="sort-controls">
                             <label for="sortBy">Sort by</label>
                             <select id="sortBy" onchange="loadHistory()">
@@ -274,11 +411,38 @@
                     <div id="entriesContainer"></div>
                 </div>
 
-            </div><!-- /.content -->
-        </div><!-- /.container -->
-    </div><!-- /#mainApp -->
+            </div>
+        </div>
+    </div>
 
-    <!-- ── JavaScript Modules ────────────────────────────────────────────── -->
+    <!-- ── Add Player Modal ───────────────────────────────────────────────── -->
+    <div id="addPlayerModal">
+        <div class="modal-box">
+            <h3>➕ Manage Players</h3>
+            <p class="modal-hint">
+                Add each player once using their <strong>Firebase UID</strong> and email.<br>
+                Find UIDs in: <strong>Firebase Console → Authentication → Users</strong>.
+            </p>
+
+            <label for="newPlayerEmail">Player Email</label>
+            <input type="email" id="newPlayerEmail" placeholder="player@email.com">
+
+            <label for="newPlayerUID">Firebase UID</label>
+            <input type="text" id="newPlayerUID" placeholder="e.g. abc123XYZ...">
+
+            <div class="modal-actions">
+                <button class="modal-cancel" onclick="closeAddPlayerModal()">Close</button>
+                <button class="modal-save" onclick="addPlayerToIndex()">Add Player</button>
+            </div>
+
+            <div id="playerListContainer">
+                <h4>Registered Players</h4>
+                <div id="playerList">Loading…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Modules -->
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="auth.js"></script>
     <script type="module" src="firestore-service.js"></script>

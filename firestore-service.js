@@ -9,27 +9,48 @@ export function isAdminUser(user) {
     return user && user.email === ADMIN_EMAIL;
 }
 
-// ─── USER REGISTRY ───────────────────────────────────────────────────────────
-// On every login, each user writes their own UID + email into a single
-// document at users/{uid}/metadata/profile  (already happening via auth.js).
-// The admin reads that doc per-user — no top-level collection listing needed.
-//
-// We also maintain a shared index at  adminIndex/userList  so the admin can
-// discover all UIDs without needing to list the top-level users/ collection
-// (which is not permitted by the security rules).
+// ─── ADMIN INDEX HELPERS ─────────────────────────────────────────────────────
+// The adminIndex/userList document holds a map of  uid → { email, lastLogin }
+// so the admin can discover all player UIDs without listing the top-level
+// users/ collection (which security rules don't permit).
 
+const ADMIN_INDEX_REF = () => doc(db, 'adminIndex', 'userList');
+
+// Called on every login — writes the current user's own slot into the index.
 export async function registerUserInAdminIndex(user) {
     try {
-        // Each user writes ONLY their own slot — keyed by uid so writes never
-        // conflict and no user can overwrite another's slot.
-        const indexRef = doc(db, 'adminIndex', 'userList');
-        await setDoc(indexRef, {
+        await setDoc(ADMIN_INDEX_REF(), {
             [user.uid]: { email: user.email, lastLogin: new Date().toISOString() }
         }, { merge: true });
     } catch (err) {
-        // Non-fatal: admin view will still work for users whose profile doc exists
         console.warn('Could not register in admin index:', err);
     }
+}
+
+// Admin: read the full index map.
+export async function getAdminIndex() {
+    const snap = await getDoc(ADMIN_INDEX_REF());
+    return snap.exists() ? snap.data() : {};
+}
+
+// Admin: manually add a player by UID + email (for players registered before
+// this index existed, or who haven't logged in yet).
+export async function addPlayerToAdminIndex(uid, email) {
+    await setDoc(ADMIN_INDEX_REF(), {
+        [uid]: { email, addedByAdmin: true, addedAt: new Date().toISOString() }
+    }, { merge: true });
+}
+
+// Admin: remove a player slot from the index (does NOT delete their entries).
+export async function removePlayerFromAdminIndex(uid) {
+    // Firestore doesn't support deleting a single map key via setDoc/updateDoc
+    // with FieldValue.delete() without the Admin SDK, so we read→filter→rewrite.
+    const snap = await getDoc(ADMIN_INDEX_REF());
+    if (!snap.exists()) return;
+    const data = snap.data();
+    delete data[uid];
+    // Overwrite the whole document with the key removed
+    await setDoc(ADMIN_INDEX_REF(), data);
 }
 
 // ─── ENTRIES ─────────────────────────────────────────────────────────────────
@@ -39,8 +60,7 @@ export async function saveEntryToFirestore(entryKey, entryData) {
     if (!user) throw new Error('User not authenticated');
 
     entryData.timestamp = new Date(entryData.date).getTime();
-    const entryRef = doc(db, 'users', user.uid, 'entries', entryKey);
-    await setDoc(entryRef, entryData);
+    await setDoc(doc(db, 'users', user.uid, 'entries', entryKey), entryData);
     return entryKey;
 }
 
@@ -48,12 +68,8 @@ export async function getEntryFromFirestore(entryKey) {
     const user = getCurrentUser();
     if (!user) throw new Error('User not authenticated');
 
-    const entryRef = doc(db, 'users', user.uid, 'entries', entryKey);
-    const entryDoc = await getDoc(entryRef);
-
-    if (entryDoc.exists()) {
-        return { key: entryDoc.id, value: JSON.stringify(entryDoc.data()) };
-    }
+    const snap = await getDoc(doc(db, 'users', user.uid, 'entries', entryKey));
+    if (snap.exists()) return { key: snap.id, value: JSON.stringify(snap.data()) };
     return null;
 }
 
@@ -62,13 +78,9 @@ export async function getAllEntriesFromFirestore() {
     if (!user) throw new Error('User not authenticated');
 
     try {
-        const entriesRef = collection(db, 'users', user.uid, 'entries');
-        const querySnapshot = await getDocs(entriesRef);
-
+        const snap = await getDocs(collection(db, 'users', user.uid, 'entries'));
         const entries = [];
-        querySnapshot.forEach((doc) => {
-            entries.push({ key: doc.id, ...doc.data() });
-        });
+        snap.forEach(d => entries.push({ key: d.id, ...d.data() }));
         return entries;
     } catch (error) {
         console.error('Error getting entries:', error);
@@ -80,66 +92,49 @@ export async function deleteEntryFromFirestore(entryKey) {
     const user = getCurrentUser();
     if (!user) throw new Error('User not authenticated');
 
-    const entryRef = doc(db, 'users', user.uid, 'entries', entryKey);
-    await deleteDoc(entryRef);
+    await deleteDoc(doc(db, 'users', user.uid, 'entries', entryKey));
     return { key: entryKey, deleted: true };
 }
 
 // ─── ADMIN: VIEW ALL USERS' ENTRIES ──────────────────────────────────────────
-// Strategy:
-// 1. Read the adminIndex/userList document to get all known UIDs + emails.
-// 2. For each UID, read that user's entries subcollection directly.
-//    The Firestore rule  allow read if isAdmin()  covers this because the
-//    admin's token email matches the rule's isAdmin() function.
-// 3. No top-level collection listing is ever attempted.
+// 1. Read adminIndex/userList to get all known UIDs.
+// 2. Always include the admin's own UID.
+// 3. Fetch each user's entries/ subcollection directly — permitted by the
+//    security rule  allow read if isAdmin().
 
 export async function getAllUsersEntriesFromFirestore() {
     const user = getCurrentUser();
     if (!user) throw new Error('User not authenticated');
     if (!isAdminUser(user)) throw new Error('Access denied: admin only');
 
-    try {
-        // Step 1: read the user index
-        const indexRef  = doc(db, 'adminIndex', 'userList');
-        const indexSnap = await getDoc(indexRef);
+    // Build the uid→email map from the index
+    const userMap = await getAdminIndex();
 
-        let userMap = {}; // { uid: { email, lastLogin } }
-        if (indexSnap.exists()) {
-            userMap = indexSnap.data();
-        }
-
-        // Always include the admin's own UID in case they have entries too
-        if (!userMap[user.uid]) {
-            userMap[user.uid] = { email: user.email };
-        }
-
-        const allEntries = [];
-
-        // Step 2: for each known UID, fetch their entries
-        for (const [uid, info] of Object.entries(userMap)) {
-            const ownerEmail = info.email || uid;
-            try {
-                const entriesRef  = collection(db, 'users', uid, 'entries');
-                const entriesSnap = await getDocs(entriesRef);
-
-                entriesSnap.forEach((entryDoc) => {
-                    allEntries.push({
-                        key: entryDoc.id,
-                        ownerUid: uid,
-                        ownerEmail,
-                        ...entryDoc.data()
-                    });
-                });
-            } catch (err) {
-                console.warn(`Could not load entries for ${ownerEmail}:`, err.message);
-            }
-        }
-
-        return allEntries;
-    } catch (error) {
-        console.error('Error getting all users entries:', error);
-        throw error;
+    // Always include the admin themselves
+    if (!userMap[user.uid]) {
+        userMap[user.uid] = { email: user.email };
     }
+
+    if (Object.keys(userMap).length === 0) {
+        console.warn('Admin index is empty. Add players via the Manage Players button.');
+        return [];
+    }
+
+    const allEntries = [];
+
+    for (const [uid, info] of Object.entries(userMap)) {
+        const ownerEmail = info.email || uid;
+        try {
+            const snap = await getDocs(collection(db, 'users', uid, 'entries'));
+            snap.forEach(d => {
+                allEntries.push({ key: d.id, ownerUid: uid, ownerEmail, ...d.data() });
+            });
+        } catch (err) {
+            console.warn(`Could not load entries for ${ownerEmail}:`, err.message);
+        }
+    }
+
+    return allEntries;
 }
 
 // ─── DRAFTS ──────────────────────────────────────────────────────────────────
@@ -147,10 +142,8 @@ export async function getAllUsersEntriesFromFirestore() {
 export async function saveDraftToFirestore(draftData) {
     const user = getCurrentUser();
     if (!user) return;
-
     try {
-        const draftRef = doc(db, 'users', user.uid, 'drafts', 'currentDraft');
-        await setDoc(draftRef, draftData);
+        await setDoc(doc(db, 'users', user.uid, 'drafts', 'currentDraft'), draftData);
     } catch (error) {
         console.error('Error saving draft:', error);
     }
@@ -159,11 +152,9 @@ export async function saveDraftToFirestore(draftData) {
 export async function loadDraftFromFirestore() {
     const user = getCurrentUser();
     if (!user) return null;
-
     try {
-        const draftRef = doc(db, 'users', user.uid, 'drafts', 'currentDraft');
-        const draftDoc = await getDoc(draftRef);
-        if (draftDoc.exists()) return draftDoc.data();
+        const snap = await getDoc(doc(db, 'users', user.uid, 'drafts', 'currentDraft'));
+        if (snap.exists()) return snap.data();
     } catch (error) {
         console.error('Error loading draft:', error);
     }
@@ -173,10 +164,8 @@ export async function loadDraftFromFirestore() {
 export async function deleteDraftFromFirestore() {
     const user = getCurrentUser();
     if (!user) return;
-
     try {
-        const draftRef = doc(db, 'users', user.uid, 'drafts', 'currentDraft');
-        await deleteDoc(draftRef);
+        await deleteDoc(doc(db, 'users', user.uid, 'drafts', 'currentDraft'));
     } catch (error) {
         console.error('Error deleting draft:', error);
     }
@@ -186,62 +175,33 @@ export async function deleteDraftFromFirestore() {
 
 export async function migrateFromLocalStorage() {
     const user = getCurrentUser();
-    if (!user) {
-        console.log('No user logged in, skipping migration');
-        return;
-    }
+    if (!user) return;
 
     try {
         const migrationRef = doc(db, 'users', user.uid, 'metadata', 'migration');
         const migrationDoc = await getDoc(migrationRef);
 
-        if (migrationDoc.exists() && migrationDoc.data().completed) {
-            console.log('Migration already completed');
-            return;
-        }
+        if (migrationDoc.exists() && migrationDoc.data().completed) return;
 
         const entries = [];
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && key.startsWith('entry:')) {
+            if (key?.startsWith('entry:')) {
                 try {
-                    const value = localStorage.getItem(key);
-                    const data  = JSON.parse(value);
-                    entries.push({ key, data });
-                } catch (e) {
-                    console.error('Error parsing entry:', key, e);
-                }
+                    entries.push({ key, data: JSON.parse(localStorage.getItem(key)) });
+                } catch (e) { console.error('Error parsing entry:', key, e); }
             }
-        }
-
-        if (entries.length === 0) {
-            console.log('No entries to migrate');
-            await setDoc(migrationRef, {
-                completed: true,
-                date: new Date().toISOString(),
-                entriesMigrated: 0
-            });
-            return;
         }
 
         let successCount = 0;
         for (const entry of entries) {
-            try {
-                await saveEntryToFirestore(entry.key, entry.data);
-                successCount++;
-            } catch (e) {
-                console.error('Error migrating entry:', entry.key, e);
-            }
+            try { await saveEntryToFirestore(entry.key, entry.data); successCount++; }
+            catch (e) { console.error('Error migrating entry:', entry.key, e); }
         }
 
-        await setDoc(migrationRef, {
-            completed: true,
-            date: new Date().toISOString(),
-            entriesMigrated: successCount
-        });
+        await setDoc(migrationRef, { completed: true, date: new Date().toISOString(), entriesMigrated: successCount });
 
-        console.log(`Migration complete. Migrated ${successCount} of ${entries.length} entries.`);
-        if (window.showToast) {
+        if (successCount > 0 && window.showToast) {
             window.showToast(`✅ Migrated ${successCount} entries to cloud storage`, 'success');
         }
     } catch (error) {
