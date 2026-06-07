@@ -1,7 +1,7 @@
 // Authentication Module
 import { auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase-config.js';
 import { db, doc, setDoc } from './firebase-config.js';
-import { isAdminUser } from './firestore-service.js';
+import { isAdminUser, registerUserInAdminIndex } from './firestore-service.js';
 
 let currentUser = null;
 
@@ -11,15 +11,20 @@ const ADMIN_EMAIL = 'anton.sarah.gregory@gmail.com';
 
 // ─── AUTH STATE ───────────────────────────────────────────────────────────────
 
-// Initialize authentication state listener
 export function initAuth() {
     onAuthStateChanged(auth, (user) => {
         currentUser = user;
 
         if (user) {
             console.log('User signed in:', user.email);
-            // Persist the user's email in Firestore so admin view can label entries
+
+            // Save profile under the user's own path (readable by admin via security rules)
             saveUserProfile(user).catch(err => console.warn('Could not save profile:', err));
+
+            // Register this user's UID in the shared admin index document
+            // so the admin can discover all users without listing the top-level collection
+            registerUserInAdminIndex(user).catch(err => console.warn('Could not update admin index:', err));
+
             showMainApp(user);
         } else {
             console.log('User signed out');
@@ -28,14 +33,12 @@ export function initAuth() {
     });
 }
 
-// Get current user
 export function getCurrentUser() {
     return currentUser;
 }
 
 // ─── PROFILE ──────────────────────────────────────────────────────────────────
 
-// Save a minimal profile so the admin can map UIDs → emails in the UI
 async function saveUserProfile(user) {
     const profileRef = doc(db, 'users', user.uid, 'metadata', 'profile');
     await setDoc(profileRef, { email: user.email, lastLogin: new Date().toISOString() }, { merge: true });
@@ -43,7 +46,6 @@ async function saveUserProfile(user) {
 
 // ─── UI VISIBILITY ────────────────────────────────────────────────────────────
 
-// Show main application
 function showMainApp(user) {
     const authScreen = document.getElementById('authScreen');
     const mainApp    = document.getElementById('mainApp');
@@ -53,20 +55,17 @@ function showMainApp(user) {
     if (mainApp)    mainApp.style.display    = 'block';
     if (userEmail)  userEmail.textContent    = user.email;
 
-    // Show or hide admin panel based on email
     const adminPanel = document.getElementById('adminPanel');
     if (adminPanel) {
         adminPanel.style.display = (user.email === ADMIN_EMAIL) ? 'flex' : 'none';
     }
 
-    // Show a subtle admin badge in the header
     const adminBadge = document.getElementById('adminBadge');
     if (adminBadge) {
         adminBadge.style.display = (user.email === ADMIN_EMAIL) ? 'inline-block' : 'none';
     }
 }
 
-// Show authentication screen
 function showAuthScreen() {
     const authScreen = document.getElementById('authScreen');
     const mainApp    = document.getElementById('mainApp');
@@ -77,13 +76,12 @@ function showAuthScreen() {
 
 // ─── AUTH HANDLERS ────────────────────────────────────────────────────────────
 
-// Handle login
 window.handleLogin = async function(event) {
     event.preventDefault();
 
-    const email     = document.getElementById('loginEmail').value;
-    const password  = document.getElementById('loginPassword').value;
-    const errorDiv  = document.getElementById('loginError');
+    const email    = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    const errorDiv = document.getElementById('loginError');
 
     try {
         if (errorDiv) errorDiv.textContent = '';
@@ -94,7 +92,6 @@ window.handleLogin = async function(event) {
     }
 };
 
-// Handle signup
 window.handleSignup = async function(event) {
     event.preventDefault();
 
@@ -110,7 +107,6 @@ window.handleSignup = async function(event) {
             if (errorDiv) errorDiv.textContent = 'Passwords do not match';
             return;
         }
-
         if (password.length < 6) {
             if (errorDiv) errorDiv.textContent = 'Password must be at least 6 characters';
             return;
@@ -123,25 +119,19 @@ window.handleSignup = async function(event) {
     }
 };
 
-// Handle logout
 window.handleLogout = async function() {
     try {
         await signOut(auth);
-        if (window.showToast) {
-            window.showToast('Logged out successfully', 'success');
-        }
+        if (window.showToast) window.showToast('Logged out successfully', 'success');
     } catch (error) {
         console.error('Logout error:', error);
-        if (window.showToast) {
-            window.showToast('Error logging out', 'error');
-        }
+        if (window.showToast) window.showToast('Error logging out', 'error');
     }
 };
 
-// Toggle between login and signup forms
 window.toggleAuthMode = function() {
-    const loginForm  = document.getElementById('loginForm');
-    const signupForm = document.getElementById('signupForm');
+    const loginForm   = document.getElementById('loginForm');
+    const signupForm  = document.getElementById('signupForm');
     const loginError  = document.getElementById('loginError');
     const signupError = document.getElementById('signupError');
 
@@ -153,7 +143,6 @@ window.toggleAuthMode = function() {
             loginForm.style.display  = 'none';
             signupForm.style.display = 'block';
         }
-
         if (loginError)  loginError.textContent  = '';
         if (signupError) signupError.textContent = '';
     }
@@ -163,16 +152,15 @@ window.toggleAuthMode = function() {
 
 function getErrorMessage(errorCode) {
     const errorMessages = {
-        'auth/invalid-email':           'Invalid email address',
-        'auth/user-disabled':           'This account has been disabled',
-        'auth/user-not-found':          'No account found with this email',
-        'auth/wrong-password':          'Incorrect password',
-        'auth/email-already-in-use':    'An account already exists with this email',
-        'auth/weak-password':           'Password is too weak',
-        'auth/network-request-failed':  'Network error. Please check your connection',
-        'auth/too-many-requests':       'Too many failed attempts. Please try again later',
-        'auth/invalid-credential':      'Invalid email or password'
+        'auth/invalid-email':          'Invalid email address',
+        'auth/user-disabled':          'This account has been disabled',
+        'auth/user-not-found':         'No account found with this email',
+        'auth/wrong-password':         'Incorrect password',
+        'auth/email-already-in-use':   'An account already exists with this email',
+        'auth/weak-password':          'Password is too weak',
+        'auth/network-request-failed': 'Network error. Please check your connection',
+        'auth/too-many-requests':      'Too many failed attempts. Please try again later',
+        'auth/invalid-credential':     'Invalid email or password'
     };
-
     return errorMessages[errorCode] || 'An error occurred. Please try again.';
 }

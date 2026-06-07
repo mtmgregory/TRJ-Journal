@@ -3,36 +3,50 @@ import { db, collection, doc, setDoc, getDoc, getDocs, deleteDoc } from './fireb
 import { getCurrentUser } from './auth.js';
 
 // ─── ADMIN CONFIG ────────────────────────────────────────────────────────────
-// Change this to the email address you use for the admin/coach account.
 const ADMIN_EMAIL = 'anton.sarah.gregory@gmail.com';
 
 export function isAdminUser(user) {
     return user && user.email === ADMIN_EMAIL;
 }
 
+// ─── USER REGISTRY ───────────────────────────────────────────────────────────
+// On every login, each user writes their own UID + email into a single
+// document at users/{uid}/metadata/profile  (already happening via auth.js).
+// The admin reads that doc per-user — no top-level collection listing needed.
+//
+// We also maintain a shared index at  adminIndex/userList  so the admin can
+// discover all UIDs without needing to list the top-level users/ collection
+// (which is not permitted by the security rules).
+
+export async function registerUserInAdminIndex(user) {
+    try {
+        // Each user writes ONLY their own slot — keyed by uid so writes never
+        // conflict and no user can overwrite another's slot.
+        const indexRef = doc(db, 'adminIndex', 'userList');
+        await setDoc(indexRef, {
+            [user.uid]: { email: user.email, lastLogin: new Date().toISOString() }
+        }, { merge: true });
+    } catch (err) {
+        // Non-fatal: admin view will still work for users whose profile doc exists
+        console.warn('Could not register in admin index:', err);
+    }
+}
+
 // ─── ENTRIES ─────────────────────────────────────────────────────────────────
 
-// Save entry to Firestore (always under the current user's own path)
 export async function saveEntryToFirestore(entryKey, entryData) {
     const user = getCurrentUser();
-    if (!user) {
-        throw new Error('User not authenticated');
-    }
+    if (!user) throw new Error('User not authenticated');
 
     entryData.timestamp = new Date(entryData.date).getTime();
-
     const entryRef = doc(db, 'users', user.uid, 'entries', entryKey);
     await setDoc(entryRef, entryData);
-
     return entryKey;
 }
 
-// Get single entry from Firestore (own entries only)
 export async function getEntryFromFirestore(entryKey) {
     const user = getCurrentUser();
-    if (!user) {
-        throw new Error('User not authenticated');
-    }
+    if (!user) throw new Error('User not authenticated');
 
     const entryRef = doc(db, 'users', user.uid, 'entries', entryKey);
     const entryDoc = await getDoc(entryRef);
@@ -40,16 +54,12 @@ export async function getEntryFromFirestore(entryKey) {
     if (entryDoc.exists()) {
         return { key: entryDoc.id, value: JSON.stringify(entryDoc.data()) };
     }
-
     return null;
 }
 
-// Get all entries for the current user only
 export async function getAllEntriesFromFirestore() {
     const user = getCurrentUser();
-    if (!user) {
-        throw new Error('User not authenticated');
-    }
+    if (!user) throw new Error('User not authenticated');
 
     try {
         const entriesRef = collection(db, 'users', user.uid, 'entries');
@@ -57,12 +67,8 @@ export async function getAllEntriesFromFirestore() {
 
         const entries = [];
         querySnapshot.forEach((doc) => {
-            entries.push({
-                key: doc.id,
-                ...doc.data()
-            });
+            entries.push({ key: doc.id, ...doc.data() });
         });
-
         return entries;
     } catch (error) {
         console.error('Error getting entries:', error);
@@ -70,62 +76,63 @@ export async function getAllEntriesFromFirestore() {
     }
 }
 
-// Delete entry from Firestore (own entries only)
 export async function deleteEntryFromFirestore(entryKey) {
     const user = getCurrentUser();
-    if (!user) {
-        throw new Error('User not authenticated');
-    }
+    if (!user) throw new Error('User not authenticated');
 
     const entryRef = doc(db, 'users', user.uid, 'entries', entryKey);
     await deleteDoc(entryRef);
-
     return { key: entryKey, deleted: true };
 }
 
 // ─── ADMIN: VIEW ALL USERS' ENTRIES ──────────────────────────────────────────
+// Strategy:
+// 1. Read the adminIndex/userList document to get all known UIDs + emails.
+// 2. For each UID, read that user's entries subcollection directly.
+//    The Firestore rule  allow read if isAdmin()  covers this because the
+//    admin's token email matches the rule's isAdmin() function.
+// 3. No top-level collection listing is ever attempted.
 
-// Admin-only: fetch entries for every user in the database.
-// Returns entries with an extra `ownerEmail` field for labelling in the UI.
-// This will be blocked by Firestore Security Rules if the caller is not admin.
 export async function getAllUsersEntriesFromFirestore() {
     const user = getCurrentUser();
-    if (!user) {
-        throw new Error('User not authenticated');
-    }
-    if (!isAdminUser(user)) {
-        throw new Error('Access denied: admin only');
-    }
+    if (!user) throw new Error('User not authenticated');
+    if (!isAdminUser(user)) throw new Error('Access denied: admin only');
 
     try {
-        // Get the list of all user documents
-        const usersRef = collection(db, 'users');
-        const usersSnap = await getDocs(usersRef);
+        // Step 1: read the user index
+        const indexRef  = doc(db, 'adminIndex', 'userList');
+        const indexSnap = await getDoc(indexRef);
+
+        let userMap = {}; // { uid: { email, lastLogin } }
+        if (indexSnap.exists()) {
+            userMap = indexSnap.data();
+        }
+
+        // Always include the admin's own UID in case they have entries too
+        if (!userMap[user.uid]) {
+            userMap[user.uid] = { email: user.email };
+        }
 
         const allEntries = [];
 
-        for (const userDoc of usersSnap.docs) {
-            const entriesRef = collection(db, 'users', userDoc.id, 'entries');
-            const entriesSnap = await getDocs(entriesRef);
-
-            // Try to pull the stored email for this user (saved during first login)
-            const metaRef = doc(db, 'users', userDoc.id, 'metadata', 'profile');
-            let ownerEmail = userDoc.id; // fallback to uid if no email stored
+        // Step 2: for each known UID, fetch their entries
+        for (const [uid, info] of Object.entries(userMap)) {
+            const ownerEmail = info.email || uid;
             try {
-                const metaDoc = await getDoc(metaRef);
-                if (metaDoc.exists() && metaDoc.data().email) {
-                    ownerEmail = metaDoc.data().email;
-                }
-            } catch (_) { /* non-fatal */ }
+                const entriesRef  = collection(db, 'users', uid, 'entries');
+                const entriesSnap = await getDocs(entriesRef);
 
-            entriesSnap.forEach((entryDoc) => {
-                allEntries.push({
-                    key: entryDoc.id,
-                    ownerUid: userDoc.id,
-                    ownerEmail,
-                    ...entryDoc.data()
+                entriesSnap.forEach((entryDoc) => {
+                    allEntries.push({
+                        key: entryDoc.id,
+                        ownerUid: uid,
+                        ownerEmail,
+                        ...entryDoc.data()
+                    });
                 });
-            });
+            } catch (err) {
+                console.warn(`Could not load entries for ${ownerEmail}:`, err.message);
+            }
         }
 
         return allEntries;
@@ -137,12 +144,9 @@ export async function getAllUsersEntriesFromFirestore() {
 
 // ─── DRAFTS ──────────────────────────────────────────────────────────────────
 
-// Save draft to Firestore
 export async function saveDraftToFirestore(draftData) {
     const user = getCurrentUser();
-    if (!user) {
-        return;
-    }
+    if (!user) return;
 
     try {
         const draftRef = doc(db, 'users', user.uid, 'drafts', 'currentDraft');
@@ -152,33 +156,23 @@ export async function saveDraftToFirestore(draftData) {
     }
 }
 
-// Load draft from Firestore
 export async function loadDraftFromFirestore() {
     const user = getCurrentUser();
-    if (!user) {
-        return null;
-    }
+    if (!user) return null;
 
     try {
         const draftRef = doc(db, 'users', user.uid, 'drafts', 'currentDraft');
         const draftDoc = await getDoc(draftRef);
-
-        if (draftDoc.exists()) {
-            return draftDoc.data();
-        }
+        if (draftDoc.exists()) return draftDoc.data();
     } catch (error) {
         console.error('Error loading draft:', error);
     }
-
     return null;
 }
 
-// Delete draft from Firestore
 export async function deleteDraftFromFirestore() {
     const user = getCurrentUser();
-    if (!user) {
-        return;
-    }
+    if (!user) return;
 
     try {
         const draftRef = doc(db, 'users', user.uid, 'drafts', 'currentDraft');
@@ -190,7 +184,6 @@ export async function deleteDraftFromFirestore() {
 
 // ─── MIGRATION ───────────────────────────────────────────────────────────────
 
-// Migrate from localStorage to Firestore
 export async function migrateFromLocalStorage() {
     const user = getCurrentUser();
     if (!user) {
@@ -213,7 +206,7 @@ export async function migrateFromLocalStorage() {
             if (key && key.startsWith('entry:')) {
                 try {
                     const value = localStorage.getItem(key);
-                    const data = JSON.parse(value);
+                    const data  = JSON.parse(value);
                     entries.push({ key, data });
                 } catch (e) {
                     console.error('Error parsing entry:', key, e);
@@ -236,7 +229,6 @@ export async function migrateFromLocalStorage() {
             try {
                 await saveEntryToFirestore(entry.key, entry.data);
                 successCount++;
-                console.log('Migrated:', entry.key);
             } catch (e) {
                 console.error('Error migrating entry:', entry.key, e);
             }
@@ -249,7 +241,6 @@ export async function migrateFromLocalStorage() {
         });
 
         console.log(`Migration complete. Migrated ${successCount} of ${entries.length} entries.`);
-
         if (window.showToast) {
             window.showToast(`✅ Migrated ${successCount} entries to cloud storage`, 'success');
         }
