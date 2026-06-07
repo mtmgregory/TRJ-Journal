@@ -5,13 +5,13 @@ import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, quer
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCd3XkfF6jyuGyQMsFCPe1NzM0TMzSsapA",
-  authDomain: "court-craft-journal.firebaseapp.com",
-  projectId: "court-craft-journal",
-  storageBucket: "court-craft-journal.firebasestorage.app",
-  messagingSenderId: "559028689866",
-  appId: "1:559028689866:web:e91e29947befaa262f4d33",
-  measurementId: "G-MZ85K4EJ6X"
+  apiKey: "AIzaSyAqBc7QfhVfha5otkEpSXt_-zpzmlPHsDc",
+  authDomain: "trj-journal.firebaseapp.com",
+  projectId: "trj-journal",
+  storageBucket: "trj-journal.firebasestorage.app",
+  messagingSenderId: "1016448588121",
+  appId: "1:1016448588121:web:2883b5f987de13aa329448",
+  measurementId: "G-TFQ3QJ3QJ9" 
 };
 
 // Initialize Firebase
