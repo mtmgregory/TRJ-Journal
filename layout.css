@@ -1,0 +1,156 @@
+/* ===============================================
+   LAYOUT STYLES - Container, Header, Navigation
+   =============================================== */
+
+.container {
+    max-width: 960px;
+    margin: 0 auto;
+    background: white;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
+    overflow: hidden;
+    border: 1px solid var(--gray-200);
+    animation: containerFadeIn 0.4s ease-out;
+}
+
+@keyframes containerFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Header — dark slate, no gradient */
+.header {
+    background: var(--primary);
+    color: white;
+    padding: var(--spacing-xl) var(--spacing-xl);
+    text-align: center;
+    position: relative;
+    border-bottom: 3px solid var(--primary-dark);
+}
+
+.header h1 {
+    font-size: 1.75rem;
+    margin-bottom: var(--spacing-xs);
+    color: white;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.header p {
+    opacity: 0.75;
+    font-size: 0.9rem;
+    font-weight: 400;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Tabs Navigation */
+.tabs {
+    display: flex;
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.tab {
+    flex: 1;
+    text-align: center;
+    padding: var(--spacing-md) 0;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--gray-500);
+    transition: color var(--transition-fast), background var(--transition-fast);
+    border-right: 1px solid var(--gray-200);
+    font-size: 0.875rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+}
+
+.tab:last-child { border-right: none; }
+
+.tab:hover:not(.active) {
+    background: var(--gray-100);
+    color: var(--gray-700);
+}
+
+.tab.active {
+    background: white;
+    color: var(--primary);
+    border-bottom: 2px solid var(--primary);
+    margin-bottom: -1px;
+    font-weight: 700;
+}
+
+/* Content Area */
+.content {
+    padding: var(--spacing-xl);
+    min-height: 400px;
+}
+
+.view {
+    display: none;
+    animation: viewFadeIn 0.25s ease-out;
+}
+
+@keyframes viewFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.view.active { display: block; }
+
+/* Quick Actions */
+.quick-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: var(--spacing-lg);
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.quick-btn {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
+    background: var(--gray-100);
+    color: var(--gray-700);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.quick-btn:hover {
+    background: var(--gray-200);
+    border-color: var(--gray-300);
+    transform: none;
+    box-shadow: none;
+}
+
+/* Section Dividers */
+.section-divider {
+    height: 1px;
+    background: var(--gray-200);
+    margin: var(--spacing-2xl) 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    body { padding: var(--spacing-sm); }
+
+    .container { border-radius: var(--radius-lg); }
+
+    .header {
+        padding: var(--spacing-lg) var(--spacing-md);
+    }
+
+    .header h1 { font-size: 1.375rem; }
+
+    .content { padding: var(--spacing-md); }
+
+    .tab {
+        padding: var(--spacing-sm) 0;
+        font-size: 0.75rem;
+    }
+}

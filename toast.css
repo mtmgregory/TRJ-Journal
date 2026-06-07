@@ -1,0 +1,102 @@
+/* ===============================================
+   TOAST NOTIFICATION STYLES
+   =============================================== */
+
+.toast {
+    position: fixed;
+    bottom: var(--spacing-xl);
+    right: var(--spacing-xl);
+    background: var(--gray-900);
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xl);
+    z-index: 1000;
+    min-width: 220px;
+    max-width: 380px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    border-left: 3px solid rgba(255, 255, 255, 0.2);
+    animation: toastSlideIn 0.25s ease-out, toastFadeOut 0.25s ease-in 2.75s;
+}
+
+.toast::before {
+    content: '✓';
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    font-weight: bold;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+.toast.error {
+    background: var(--danger);
+    border-left-color: rgba(255, 255, 255, 0.2);
+}
+
+.toast.error::before { content: '✕'; }
+
+.toast.warning {
+    background: var(--gray-800);
+    border-left-color: var(--warning);
+}
+
+.toast.warning::before { content: '!'; }
+
+.toast.info {
+    background: var(--gray-800);
+    border-left-color: var(--info);
+}
+
+.toast.info::before { content: 'i'; }
+
+@keyframes toastSlideIn {
+    from { transform: translateX(calc(100% + var(--spacing-xl))); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes toastFadeOut {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(-8px); }
+}
+
+/* Toast Container */
+.toast-container {
+    position: fixed;
+    bottom: var(--spacing-xl);
+    right: var(--spacing-xl);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    pointer-events: none;
+}
+
+.toast-container .toast {
+    position: static;
+    pointer-events: all;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .toast {
+        bottom: var(--spacing-md);
+        right: var(--spacing-md);
+        left: var(--spacing-md);
+        max-width: none;
+    }
+
+    .toast-container {
+        bottom: var(--spacing-md);
+        right: var(--spacing-md);
+        left: var(--spacing-md);
+    }
+}

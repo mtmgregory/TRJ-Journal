@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Court Craft Journal</title>
+
+    <!-- Modular CSS Files -->
+    <link rel="stylesheet" href="base.css">
+    <link rel="stylesheet" href="auth.css">
+    <link rel="stylesheet" href="layout.css">
+    <link rel="stylesheet" href="forms.css">
+    <link rel="stylesheet" href="history.css">
+    <link rel="stylesheet" href="toast.css">
+</head>
+<body>
+    <!-- Authentication Screen -->
+    <div id="authScreen" class="auth-screen">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h1>Court Craft Journal</h1>
+                <p>Track your squash performance and improve your game</p>
+            </div>
+
+            <!-- Login Form -->
+            <div id="loginForm" class="auth-form">
+                <h2>Welcome Back</h2>
+                <form onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="loginEmail">Email</label>
+                        <input type="email" id="loginEmail" required placeholder="your@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" required placeholder="••••••••">
+                    </div>
+                    <div id="loginError" class="error-message"></div>
+                    <button type="submit" class="auth-btn">Log In</button>
+                </form>
+                <p class="auth-toggle">
+                    Don't have an account?
+                    <a href="#" onclick="toggleAuthMode(); return false;">Sign up</a>
+                </p>
+            </div>
+
+            <!-- Signup Form -->
+            <div id="signupForm" class="auth-form" style="display: none;">
+                <h2>Create Account</h2>
+                <form onsubmit="handleSignup(event)">
+                    <div class="form-group">
+                        <label for="signupEmail">Email</label>
+                        <input type="email" id="signupEmail" required placeholder="your@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="signupPassword">Password</label>
+                        <input type="password" id="signupPassword" required placeholder="At least 6 characters">
+                    </div>
+                    <div class="form-group">
+                        <label for="signupConfirmPassword">Confirm Password</label>
+                        <input type="password" id="signupConfirmPassword" required placeholder="Re-enter password">
+                    </div>
+                    <div id="signupError" class="error-message"></div>
+                    <button type="submit" class="auth-btn">Sign Up</button>
+                </form>
+                <p class="auth-toggle">
+                    Already have an account?
+                    <a href="#" onclick="toggleAuthMode(); return false;">Log in</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application (hidden until logged in) -->
+    <div id="mainApp" style="display: none;">
+        <div class="container">
+            <div class="header">
+                <h1>Daily Sports Performance Journal</h1>
+                <p>Track your performance and discover what makes you succeed</p>
+                <div class="user-info">
+                    <span id="userEmail"></span>
+                    <button onclick="handleLogout()" class="logout-btn">Log out</button>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('journal')">New Entry</div>
+                <div class="tab" onclick="switchTab('history')">History</div>
+            </div>
+
+            <div class="content">
+                <div id="journal" class="view active">
+                    <div class="quick-actions">
+                        <button class="quick-btn" onclick="clearForm()">Clear Form</button>
+                    </div>
+
+                    <div class="journal-section">
+                        <h2>Date</h2>
+                        <label for="entryDate">Date of Session</label>
+                        <input type="date" id="entryDate" required>
+                        <input type="hidden" id="editingKey">
+                        <input type="hidden" id="sessionTypeSelect" value="Match Day">
+                        <input type="hidden" id="sessionType" value="Match Day">
+                    </div>
+
+                    <div class="journal-section" id="exerciseSection">
+                        <h2>Exercise &amp; Performance</h2>
+
+                        <label for="sessionDetails">Pre-Match Preparation</label>
+                        <p class="field-subtext">Record your readiness going into this session — sleep quality and duration, nutrition and hydration, visualisation or mental prep, and warm-up routine.</p>
+                        <textarea id="sessionDetails" placeholder="e.g. 8hrs sleep, oats and banana pre-match, 10 min visualisation, full ghosting warm-up..."></textarea>
+
+                        <label for="notes">Notes on Feeling &amp; Reflection</label>
+                        <textarea id="notes" placeholder="How did you feel mentally and physically? What went well or poorly?"></textarea>
+
+                        <div id="matchFields">
+                            <h3>Match Details</h3>
+
+                            <label for="opponentName">Opponent Name</label>
+                            <input type="text" id="opponentName" placeholder="Full Name">
+
+                            <label for="gameScores">Game Scores</label>
+                            <textarea id="gameScores" placeholder="11-4, 11-6, 11-6"></textarea>
+
+                            <h3>My Performance Analysis</h3>
+
+                            <label for="perfLengthWidth">Length and Width — Notes</label>
+                            <textarea id="perfLengthWidth" placeholder="Describe your target hitting, depth control, and court coverage..."></textarea>
+
+                            <label for="perfHeightPace">Height and Pace — Notes</label>
+                            <textarea id="perfHeightPace" placeholder="Describe how you controlled the pace and used height..."></textarea>
+
+                            <label for="perfControlT">Control and T Position — Notes</label>
+                            <textarea id="perfControlT" placeholder="Describe your court control and T position dominance..."></textarea>
+
+                            <label for="perfMovement">Movement — Notes</label>
+                            <textarea id="perfMovement" placeholder="Describe your efficiency, explosiveness, and balance..."></textarea>
+
+                            <label for="perfAttack">Attack — Notes</label>
+                            <textarea id="perfAttack" placeholder="Describe how you attacked during your match..."></textarea>
+
+                            <label for="perfHittingToSpace">Hitting to Space — Notes</label>
+                            <textarea id="perfHittingToSpace" placeholder="Describe your spatial awareness and shot placement..."></textarea>
+
+                            <h3>Opponent Analysis</h3>
+
+                            <label for="oppStrengths">Opponent's Strengths</label>
+                            <textarea id="oppStrengths" placeholder="Describe the strengths of your opponent"></textarea>
+
+                            <label for="oppWeaknesses">Opponent's Weaknesses</label>
+                            <textarea id="oppWeaknesses" placeholder="Describe the weaknesses of your opponent"></textarea>
+
+                            <label for="matchSummary">Summary and Comments</label>
+                            <textarea id="matchSummary" placeholder="Overall reflection on the match"></textarea>
+
+                            <label for="oneThingToWorkOn">One Thing to Work On</label>
+                            <textarea id="oneThingToWorkOn" placeholder="The single most important technical or tactical element to practice next."></textarea>
+                        </div>
+                    </div>
+
+                    <button onclick="saveEntry()" id="saveBtn">Save Journal Entry</button>
+                    <button onclick="cancelEdit()" id="cancelBtn" class="btn-secondary" style="display: none;">Cancel Edit</button>
+                </div>
+
+                <div id="history" class="view">
+                    <div class="export-section">
+                        <button onclick="showImportDialog()">Import Entries</button>
+                        <button onclick="exportToCSV()">Export to CSV</button>
+                    </div>
+
+                    <div class="filter-section">
+                        <h2>Search &amp; Filter</h2>
+
+                        <div class="search-box">
+                            <label for="searchKeyword">Search</label>
+                            <input type="text" id="searchKeyword" placeholder="Search entries..." oninput="debouncedSearch()">
+                        </div>
+
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <label for="dateRange">Date Range</label>
+                                <select id="dateRange" onchange="loadHistory()">
+                                    <option value="all">All Time</option>
+                                    <option value="7">Last 7 Days</option>
+                                    <option value="30">Last 30 Days</option>
+                                    <option value="90">Last 90 Days</option>
+                                    <option value="month">This Month</option>
+                                    <option value="year">This Year</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="sort-controls">
+                            <label for="sortBy">Sort by</label>
+                            <select id="sortBy" onchange="loadHistory()">
+                                <option value="date-desc">Date (Newest First)</option>
+                                <option value="date-asc">Date (Oldest First)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="entriesContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Modules -->
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="firestore-service.js"></script>
+    <script type="module" src="ui-helpers.js"></script>
+    <script type="module" src="form-handlers.js"></script>
+    <script type="module" src="history.js"></script>
+    <script type="module" src="import.js"></script>
+    <script type="module" src="export.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
