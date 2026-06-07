@@ -7,7 +7,7 @@ let currentUser = null;
 
 // ─── ADMIN CONFIG ─────────────────────────────────────────────────────────────
 // Must match ADMIN_EMAIL in firestore-service.js
-const ADMIN_EMAIL = 'admin@yourdomain.com';
+const ADMIN_EMAIL = 'anton.sarah.gregory@gmail.com';
 
 // ─── AUTH STATE ───────────────────────────────────────────────────────────────
 

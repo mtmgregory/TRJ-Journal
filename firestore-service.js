@@ -4,7 +4,7 @@ import { getCurrentUser } from './auth.js';
 
 // ─── ADMIN CONFIG ────────────────────────────────────────────────────────────
 // Change this to the email address you use for the admin/coach account.
-const ADMIN_EMAIL = 'admin@yourdomain.com';
+const ADMIN_EMAIL = 'anton.sarah.gregory@gmail.com';
 
 export function isAdminUser(user) {
     return user && user.email === ADMIN_EMAIL;
