@@ -2,49 +2,59 @@
 import { db, collection, doc, setDoc, getDoc, getDocs, deleteDoc } from './firebase-config.js';
 import { getCurrentUser } from './auth.js';
 
-// Save entry to Firestore
+// ─── ADMIN CONFIG ────────────────────────────────────────────────────────────
+// Change this to the email address you use for the admin/coach account.
+const ADMIN_EMAIL = 'admin@yourdomain.com';
+
+export function isAdminUser(user) {
+    return user && user.email === ADMIN_EMAIL;
+}
+
+// ─── ENTRIES ─────────────────────────────────────────────────────────────────
+
+// Save entry to Firestore (always under the current user's own path)
 export async function saveEntryToFirestore(entryKey, entryData) {
     const user = getCurrentUser();
     if (!user) {
         throw new Error('User not authenticated');
     }
-    
+
     entryData.timestamp = new Date(entryData.date).getTime();
-    
+
     const entryRef = doc(db, 'users', user.uid, 'entries', entryKey);
     await setDoc(entryRef, entryData);
-    
+
     return entryKey;
 }
 
-// Get single entry from Firestore
+// Get single entry from Firestore (own entries only)
 export async function getEntryFromFirestore(entryKey) {
     const user = getCurrentUser();
     if (!user) {
         throw new Error('User not authenticated');
     }
-    
+
     const entryRef = doc(db, 'users', user.uid, 'entries', entryKey);
     const entryDoc = await getDoc(entryRef);
-    
+
     if (entryDoc.exists()) {
         return { key: entryDoc.id, value: JSON.stringify(entryDoc.data()) };
     }
-    
+
     return null;
 }
 
-// Get all entries from Firestore
+// Get all entries for the current user only
 export async function getAllEntriesFromFirestore() {
     const user = getCurrentUser();
     if (!user) {
         throw new Error('User not authenticated');
     }
-    
+
     try {
         const entriesRef = collection(db, 'users', user.uid, 'entries');
         const querySnapshot = await getDocs(entriesRef);
-        
+
         const entries = [];
         querySnapshot.forEach((doc) => {
             entries.push({
@@ -52,26 +62,80 @@ export async function getAllEntriesFromFirestore() {
                 ...doc.data()
             });
         });
-        
-        return entries; // Return actual data, not just keys
+
+        return entries;
     } catch (error) {
         console.error('Error getting entries:', error);
         throw error;
     }
 }
 
-// Delete entry from Firestore
+// Delete entry from Firestore (own entries only)
 export async function deleteEntryFromFirestore(entryKey) {
     const user = getCurrentUser();
     if (!user) {
         throw new Error('User not authenticated');
     }
-    
+
     const entryRef = doc(db, 'users', user.uid, 'entries', entryKey);
     await deleteDoc(entryRef);
-    
+
     return { key: entryKey, deleted: true };
 }
+
+// ─── ADMIN: VIEW ALL USERS' ENTRIES ──────────────────────────────────────────
+
+// Admin-only: fetch entries for every user in the database.
+// Returns entries with an extra `ownerEmail` field for labelling in the UI.
+// This will be blocked by Firestore Security Rules if the caller is not admin.
+export async function getAllUsersEntriesFromFirestore() {
+    const user = getCurrentUser();
+    if (!user) {
+        throw new Error('User not authenticated');
+    }
+    if (!isAdminUser(user)) {
+        throw new Error('Access denied: admin only');
+    }
+
+    try {
+        // Get the list of all user documents
+        const usersRef = collection(db, 'users');
+        const usersSnap = await getDocs(usersRef);
+
+        const allEntries = [];
+
+        for (const userDoc of usersSnap.docs) {
+            const entriesRef = collection(db, 'users', userDoc.id, 'entries');
+            const entriesSnap = await getDocs(entriesRef);
+
+            // Try to pull the stored email for this user (saved during first login)
+            const metaRef = doc(db, 'users', userDoc.id, 'metadata', 'profile');
+            let ownerEmail = userDoc.id; // fallback to uid if no email stored
+            try {
+                const metaDoc = await getDoc(metaRef);
+                if (metaDoc.exists() && metaDoc.data().email) {
+                    ownerEmail = metaDoc.data().email;
+                }
+            } catch (_) { /* non-fatal */ }
+
+            entriesSnap.forEach((entryDoc) => {
+                allEntries.push({
+                    key: entryDoc.id,
+                    ownerUid: userDoc.id,
+                    ownerEmail,
+                    ...entryDoc.data()
+                });
+            });
+        }
+
+        return allEntries;
+    } catch (error) {
+        console.error('Error getting all users entries:', error);
+        throw error;
+    }
+}
+
+// ─── DRAFTS ──────────────────────────────────────────────────────────────────
 
 // Save draft to Firestore
 export async function saveDraftToFirestore(draftData) {
@@ -79,7 +143,7 @@ export async function saveDraftToFirestore(draftData) {
     if (!user) {
         return;
     }
-    
+
     try {
         const draftRef = doc(db, 'users', user.uid, 'drafts', 'currentDraft');
         await setDoc(draftRef, draftData);
@@ -94,18 +158,18 @@ export async function loadDraftFromFirestore() {
     if (!user) {
         return null;
     }
-    
+
     try {
         const draftRef = doc(db, 'users', user.uid, 'drafts', 'currentDraft');
         const draftDoc = await getDoc(draftRef);
-        
+
         if (draftDoc.exists()) {
             return draftDoc.data();
         }
     } catch (error) {
         console.error('Error loading draft:', error);
     }
-    
+
     return null;
 }
 
@@ -115,7 +179,7 @@ export async function deleteDraftFromFirestore() {
     if (!user) {
         return;
     }
-    
+
     try {
         const draftRef = doc(db, 'users', user.uid, 'drafts', 'currentDraft');
         await deleteDoc(draftRef);
@@ -124,6 +188,8 @@ export async function deleteDraftFromFirestore() {
     }
 }
 
+// ─── MIGRATION ───────────────────────────────────────────────────────────────
+
 // Migrate from localStorage to Firestore
 export async function migrateFromLocalStorage() {
     const user = getCurrentUser();
@@ -131,16 +197,16 @@ export async function migrateFromLocalStorage() {
         console.log('No user logged in, skipping migration');
         return;
     }
-    
+
     try {
         const migrationRef = doc(db, 'users', user.uid, 'metadata', 'migration');
         const migrationDoc = await getDoc(migrationRef);
-        
+
         if (migrationDoc.exists() && migrationDoc.data().completed) {
             console.log('Migration already completed');
             return;
         }
-        
+
         const entries = [];
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
@@ -154,17 +220,17 @@ export async function migrateFromLocalStorage() {
                 }
             }
         }
-        
+
         if (entries.length === 0) {
             console.log('No entries to migrate');
-            await setDoc(migrationRef, { 
-                completed: true, 
-                date: new Date().toISOString(), 
-                entriesMigrated: 0 
+            await setDoc(migrationRef, {
+                completed: true,
+                date: new Date().toISOString(),
+                entriesMigrated: 0
             });
             return;
         }
-        
+
         let successCount = 0;
         for (const entry of entries) {
             try {
@@ -175,15 +241,15 @@ export async function migrateFromLocalStorage() {
                 console.error('Error migrating entry:', entry.key, e);
             }
         }
-        
-        await setDoc(migrationRef, { 
-            completed: true, 
+
+        await setDoc(migrationRef, {
+            completed: true,
             date: new Date().toISOString(),
             entriesMigrated: successCount
         });
-        
+
         console.log(`Migration complete. Migrated ${successCount} of ${entries.length} entries.`);
-        
+
         if (window.showToast) {
             window.showToast(`✅ Migrated ${successCount} entries to cloud storage`, 'success');
         }
