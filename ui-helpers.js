@@ -1,204 +1,342 @@
-// UI Helpers Module
-import { sessionLoad } from './fields.js';
-
-export function esc(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
+// UI Helpers Module - ENHANCED WITH PERFORMANCE RATINGS
 
 // Show toast notification
 export function showToast(message, type = 'success') {
     const toast = document.createElement('div');
-    toast.className = 'toast' + (type === 'error' ? ' error' : type === 'warning' ? ' warning' : '');
+    toast.className = 'toast';
     toast.textContent = message;
-
+    
+    if (type === 'error') {
+        toast.style.background = '#dc3545';
+    } else if (type === 'warning') {
+        toast.style.background = '#ffc107';
+        toast.style.color = '#000';
+    }
+    
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
 }
 
 window.showToast = showToast;
 
-function scoreClass(n) {
-    if (n >= 8) return 'excellent';
-    if (n >= 6) return 'good';
-    if (n >= 4) return 'average';
-    return 'poor';
+// Format performance rating with stars and color coding
+function formatPerformanceRating(rating, notes) {
+    if (!rating && !notes) return '';
+    
+    let html = '<div style="margin-top: 0.5rem;">';
+    
+    if (rating) {
+        const ratingNum = parseInt(rating);
+        const stars = '⭐'.repeat(ratingNum);
+        const emptyStars = '☆'.repeat(10 - ratingNum);
+        
+        let ratingClass = 'rating-inline';
+        if (ratingNum >= 8) ratingClass += ' excellent';
+        else if (ratingNum >= 6) ratingClass += ' good';
+        else if (ratingNum >= 4) ratingClass += ' average';
+        else ratingClass += ' poor';
+        
+        html += `<div class="${ratingClass}" style="font-size: 0.85rem; margin-bottom: 0.25rem; padding: 0.25rem 0.5rem; border-radius: 4px; display: inline-block;">
+            <strong>Rating:</strong> ${stars}${emptyStars} <strong>${ratingNum}/10</strong>
+        </div>`;
+    }
+    
+    if (notes) {
+        html += `<div style="color: var(--gray-700); margin-top: 0.25rem;">${notes}</div>`;
+    }
+    
+    html += '</div>';
+    return html;
 }
 
-function getFocusBadge(rating) {
-    const n = parseInt(rating);
-    if (isNaN(n)) return '';
-    return `<span class="rating-badge ${scoreClass(n)}" title="Mental Focus Rating">🧠 ${n}/10</span>`;
+// Get performance average badge for match entries
+function getPerformanceAverageBadge(entry) {
+    if (entry.sessionType !== 'Match Day') return '';
+    
+    const ratings = [
+        entry.perfLengthWidthRating,
+        entry.perfHeightPaceRating,
+        entry.perfControlTRating,
+        entry.perfMovementRating,
+        entry.perfAttackRating,
+        entry.perfHittingToSpaceRating
+    ].filter(r => r && !isNaN(parseInt(r))).map(r => parseInt(r));
+    
+    if (ratings.length === 0) return '';
+    
+    const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+    const avgRounded = avg.toFixed(1);
+    
+    let badgeClass = 'performance-avg-badge';
+    if (avg >= 8) badgeClass += ' excellent';
+    else if (avg >= 6) badgeClass += ' good';
+    else if (avg >= 4) badgeClass += ' average';
+    else badgeClass += ' poor';
+    
+    return `<span class="${badgeClass}" title="Average across ${ratings.length} performance categories">Perf: ${avgRounded}/10</span>`;
 }
 
+// Get rating badge HTML with color coding
+function getRatingBadge(rating) {
+    const ratingNum = parseInt(rating);
+    let badgeClass = 'rating-badge';
+    let stars = '★'.repeat(ratingNum);
+    
+    if (ratingNum >= 5) {
+        badgeClass += ' excellent';
+    } else if (ratingNum >= 4) {
+        badgeClass += ' good';
+    } else if (ratingNum >= 3) {
+        badgeClass += ' average';
+    } else {
+        badgeClass += ' poor';
+    }
+    
+    return `<span class="${badgeClass}">${stars} ${ratingNum}/5</span>`;
+}
+
+// Get session type badge with color coding
 function getSessionTypeBadge(sessionType) {
     if (!sessionType) return '';
-    let cls = 'session-type-badge';
-    if (/s&c|physical/i.test(sessionType)) cls += ' training';
-    else if (/on court|technical|tactical|match/i.test(sessionType)) cls += ' match';
-    else cls += ' recovery';
-    return `<span class="${cls}">${esc(sessionType)}</span>`;
+    
+    let badgeClass = 'session-type-badge';
+    
+    if (sessionType === 'Match Day') {
+        badgeClass += ' match';
+    } else if (sessionType === 'Training') {
+        badgeClass += ' training';
+    } else if (sessionType === 'Recovery') {
+        badgeClass += ' recovery';
+    }
+    
+    return `<span class="${badgeClass}">${sessionType}</span>`;
 }
 
-function indicator(cls, text) {
-    return `<span class="health-indicator ${cls}">${text}</span>`;
+// Get health indicator with color coding
+function getHealthIndicator(value, type) {
+    if (!value) return 'N/A';
+    
+    const numValue = parseFloat(value);
+    let indicatorClass = 'health-indicator';
+    let status = '';
+    
+    if (type === 'sleep') {
+        if (numValue >= 7.5) {
+            indicatorClass += ' good';
+            status = 'Good';
+        } else if (numValue >= 6) {
+            indicatorClass += ' average';
+            status = 'Fair';
+        } else {
+            indicatorClass += ' poor';
+            status = 'Low';
+        }
+        return `<span class="${indicatorClass}">😴 ${value}h (${status})</span>`;
+    } else if (type === 'hydration') {
+        if (numValue >= 2.5) {
+            indicatorClass += ' good';
+            status = 'Good';
+        } else if (numValue >= 1.5) {
+            indicatorClass += ' average';
+            status = 'Fair';
+        } else {
+            indicatorClass += ' poor';
+            status = 'Low';
+        }
+        return `<span class="${indicatorClass}">💧 ${value}L (${status})</span>`;
+    }
+    
+    return value;
 }
 
-function getHealthIndicators(entry) {
-    const out = [];
-    const sleep = parseFloat(entry.sleep);
-    if (!isNaN(sleep)) {
-        const cls = sleep >= 7.5 ? 'good' : sleep >= 6 ? 'average' : 'poor';
-        out.push(indicator(cls, `😴 ${sleep}h`));
-    }
-    const sq = parseInt(entry.sleepQuality);
-    if (!isNaN(sq)) {
-        const cls = sq >= 7 ? 'good' : sq >= 5 ? 'average' : 'poor';
-        out.push(indicator(cls, `💤 Quality ${sq}/10`));
-    }
-    const hyd = parseFloat(entry.hydration);
-    if (!isNaN(hyd)) {
-        const cls = hyd >= 2.5 ? 'good' : hyd >= 1.5 ? 'average' : 'poor';
-        out.push(indicator(cls, `💧 ${hyd}L`));
-    }
-    const sore = parseInt(entry.soreness);
-    if (!isNaN(sore)) {
-        // lower soreness is better
-        const cls = sore <= 3 ? 'good' : sore <= 6 ? 'average' : 'poor';
-        out.push(indicator(cls, `🦵 Soreness ${sore}/10`));
-    }
-    const mood = parseInt(entry.mood);
-    if (!isNaN(mood)) {
-        const cls = mood >= 7 ? 'good' : mood >= 5 ? 'average' : 'poor';
-        out.push(indicator(cls, `🙂 Mood ${mood}/10`));
-    }
-    const stress = parseInt(entry.stress);
-    if (!isNaN(stress)) {
-        const cls = stress <= 3 ? 'good' : stress <= 6 ? 'average' : 'poor';
-        out.push(indicator(cls, `😬 Stress ${stress}/10`));
-    }
-    const fatigue = parseInt(entry.fatigue);
-    if (!isNaN(fatigue)) {
-        const cls = fatigue <= 3 ? 'good' : fatigue <= 6 ? 'average' : 'poor';
-        out.push(indicator(cls, `🔋 Fatigue ${fatigue}/10`));
-    }
-    return out.length ? `<div class="health-metrics">${out.join('')}</div>` : '';
-}
-
-function detail(label, value, extraClass = '') {
-    if (value === undefined || value === null || value === '') return '';
-    return `
-        <div class="detail-item" style="margin-bottom: 10px;">
-            <div class="detail-label">${label}</div>
-            <div class="detail-value ${extraClass}" style="white-space: pre-wrap;">${esc(value)}</div>
-        </div>`;
-}
-
-function gridDetail(label, value, stat = true) {
-    return `
-        <div class="detail-item">
-            <div class="detail-label">${label}</div>
-            <div class="detail-value ${stat ? 'stat' : ''}">${value ? esc(value) : 'N/A'}</div>
-        </div>`;
-}
-
-function goalBlock(num, goal, strategy, score) {
-    const hasScore = score !== undefined && score !== null && score !== '';
-    if (!goal && !strategy && !hasScore) return '';
-    return `
-        <div class="detail-item" style="margin-bottom: 10px;">
-            <div class="detail-label">🎯 Process Goal ${num}${hasScore ? ` · achieved ${esc(score)}%` : ''}</div>
-            <div class="detail-value" style="white-space: pre-wrap;">${esc(goal || '—')}</div>
-            ${strategy ? `<div class="detail-label" style="margin-top:0.5rem;">Execution Strategy</div>
-            <div class="detail-value" style="white-space: pre-wrap; font-weight: 500;">${esc(strategy)}</div>` : ''}
-        </div>`;
-}
-
-function distractionTable(list) {
-    const rows = (list || []).filter(d => d && (d.distraction || d.reaction || d.refocus));
-    if (rows.length === 0) return '';
-    return `
-        <div class="detail-item" style="margin-bottom: 10px;">
-            <div class="detail-label">🧩 Distraction Control Audit</div>
-            <div class="distraction-view">
-                ${rows.map(d => `
-                    <div class="distraction-view-row">
-                        <div><span class="dv-label">Distraction</span>${esc(d.distraction || '—')}</div>
-                        <div><span class="dv-label">Reaction</span>${esc(d.reaction || '—')}</div>
-                        <div><span class="dv-label">Refocus Routine</span>${esc(d.refocus || '—')}</div>
-                        <div><span class="dv-label">Did it work?</span>${d.effect ? esc(d.effect) + '/5' : '—'}</div>
-                    </div>`).join('')}
-            </div>
-        </div>`;
-}
-
-// Create entry card HTML
-export function createEntryCard(entry, options = {}) {
-    const parts = String(entry.date || '').split('-');
-    const date = parts.length === 3 ? new Date(parts[0], parts[1] - 1, parts[2]) : new Date(entry.date);
-    const formattedDate = date.toLocaleDateString('en-US', {
-        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+// Create entry card HTML with enhanced styling - INCLUDES PERFORMANCE RATINGS
+export function createEntryCard(entry) {
+    const date = new Date(entry.date);
+    const formattedDate = date.toLocaleDateString('en-US', { 
+        weekday: 'short', 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
     });
-
-    const rpe = parseInt(entry.rpe);
-    const load = sessionLoad(entry);
-
-    const headerInfo = `
+    
+    const weatherEmoji = {
+        'sunny': '☀️',
+        'cloudy': '☁️',
+        'rainy': '🌧️',
+        'snowy': '❄️',
+        'indoor': '🏢'
+    };
+    
+    const isMatch = entry.sessionType === 'Match Day';
+    
+    // Health metrics in a clean row
+    let healthMetricsHTML = '';
+    if (entry.sleep || entry.hydration) {
+        healthMetricsHTML = `<div class="health-metrics">`;
+        if (entry.sleep) {
+            healthMetricsHTML += getHealthIndicator(entry.sleep, 'sleep');
+        }
+        if (entry.hydration) {
+            healthMetricsHTML += getHealthIndicator(entry.hydration, 'hydration');
+        }
+        healthMetricsHTML += `</div>`;
+    }
+    
+    // Build header info with rating on right, health metrics below badges
+    let headerInfo = `
         <div class="entry-header-info">
             <div class="entry-date-row">
-                <span class="entry-date">${esc(formattedDate)}</span>
-                ${(options.ownerLabel || entry.athleteName) ? `<span class="opponent-badge">👤 ${esc(options.ownerLabel || entry.athleteName)}</span>` : ''}
+                <span class="entry-date">${formattedDate}</span>
             </div>
             <div class="entry-badges-row">
                 ${getSessionTypeBadge(entry.sessionType)}
-                ${!isNaN(rpe) ? `<span class="opponent-badge" title="Session RPE">🔥 RPE ${rpe}/10</span>` : ''}
-                ${load !== null ? `<span class="opponent-badge" title="Session load = RPE × minutes">⚡ Load ${load}</span>` : ''}
+                ${isMatch && entry.opponentName ? `<span class="opponent-badge">vs ${entry.opponentName}</span>` : ''}
+                ${getPerformanceAverageBadge(entry)}
             </div>
-            ${getHealthIndicators(entry)}
+            ${healthMetricsHTML}
         </div>
         <div class="rating-container">
-            ${getFocusBadge(entry.focusRating)}
+            ${getRatingBadge(entry.rating)}
         </div>
     `;
-
+    
+    const matchDetails = isMatch && entry.opponentName ? `
+        <div class="detail-item">
+            <div class="detail-label">Opponent</div>
+            <div class="detail-value">${entry.opponentName || 'N/A'}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Scores</div>
+            <div class="detail-value stat">${entry.gameScores || 'N/A'}</div>
+        </div>
+        ${entry.opponentLevel ? `
+        <div class="detail-item">
+            <div class="detail-label">Opponent Level</div>
+            <div class="detail-value stat">${entry.opponentLevel}</div>
+        </div>` : ''}
+        ${entry.yourLevel ? `
+        <div class="detail-item">
+            <div class="detail-label">Your Level</div>
+            <div class="detail-value stat">${entry.yourLevel}</div>
+        </div>` : ''}
+    ` : '';
+    
+    // Performance details with ratings - NEW ENHANCED SECTION
+    const performanceDetails = isMatch ? `
+        ${entry.perfLengthWidth || entry.perfLengthWidthRating ? `
+            <div class="detail-item" style="margin-bottom: 10px;">
+                <div class="detail-label">📏 Length and Width</div>
+                <div class="detail-value">${formatPerformanceRating(entry.perfLengthWidthRating, entry.perfLengthWidth)}</div>
+            </div>
+        ` : ''}
+        ${entry.perfHeightPace || entry.perfHeightPaceRating ? `
+            <div class="detail-item" style="margin-bottom: 10px;">
+                <div class="detail-label">⬆️ Height and Pace</div>
+                <div class="detail-value">${formatPerformanceRating(entry.perfHeightPaceRating, entry.perfHeightPace)}</div>
+            </div>
+        ` : ''}
+        ${entry.perfControlT || entry.perfControlTRating ? `
+            <div class="detail-item" style="margin-bottom: 10px;">
+                <div class="detail-label">🎯 Control and T Position</div>
+                <div class="detail-value">${formatPerformanceRating(entry.perfControlTRating, entry.perfControlT)}</div>
+            </div>
+        ` : ''}
+        ${entry.perfMovement || entry.perfMovementRating ? `
+            <div class="detail-item" style="margin-bottom: 10px;">
+                <div class="detail-label">🏃 Movement</div>
+                <div class="detail-value">${formatPerformanceRating(entry.perfMovementRating, entry.perfMovement)}</div>
+            </div>
+        ` : ''}
+        ${entry.perfAttack || entry.perfAttackRating ? `
+            <div class="detail-item" style="margin-bottom: 10px;">
+                <div class="detail-label">⚡ Attack</div>
+                <div class="detail-value">${formatPerformanceRating(entry.perfAttackRating, entry.perfAttack)}</div>
+            </div>
+        ` : ''}
+        ${entry.perfHittingToSpace || entry.perfHittingToSpaceRating ? `
+            <div class="detail-item" style="margin-bottom: 10px;">
+                <div class="detail-label">🎲 Hitting to Space</div>
+                <div class="detail-value">${formatPerformanceRating(entry.perfHittingToSpaceRating, entry.perfHittingToSpace)}</div>
+            </div>
+        ` : ''}
+        ${entry.oppStrengths ? `
+            <div class="detail-item" style="margin-bottom: 10px;">
+                <div class="detail-label">💪 Opponent's Strengths</div>
+                <div class="detail-value">${entry.oppStrengths}</div>
+            </div>
+        ` : ''}
+        ${entry.oppWeaknesses ? `
+            <div class="detail-item" style="margin-bottom: 10px;">
+                <div class="detail-label">🎯 Opponent's Weaknesses</div>
+                <div class="detail-value">${entry.oppWeaknesses}</div>
+            </div>
+        ` : ''}
+        ${entry.matchSummary ? `
+            <div class="detail-item" style="margin-bottom: 10px;">
+                <div class="detail-label">📝 Match Summary</div>
+                <div class="detail-value">${entry.matchSummary}</div>
+            </div>
+        ` : ''}
+        ${entry.oneThingToWorkOn ? `
+            <div class="detail-item" style="margin-bottom: 10px;">
+                <div class="detail-label">🎓 One Thing to Work On</div>
+                <div class="detail-value">${entry.oneThingToWorkOn}</div>
+            </div>
+        ` : ''}
+    ` : '';
+    
     return `
-        <div class="entry-card" data-entry-key="${esc(entry.key)}">
+        <div class="entry-card" data-entry-key="${entry.key}">
             <div class="entry-card-header">
-                <div class="entry-card-summary">${headerInfo}</div>
+                <div class="entry-card-summary">
+                    ${headerInfo}
+                </div>
                 <div class="expand-toggle"></div>
             </div>
-
+            
             <div class="entry-card-body">
                 <div class="entry-details">
-                    ${gridDetail('Session Type', entry.sessionType, false)}
-                    ${gridDetail('Sleep', entry.sleep ? entry.sleep + ' hrs' : '')}
-                    ${gridDetail('Sleep Quality', entry.sleepQuality ? entry.sleepQuality + '/10' : '')}
-                    ${gridDetail('Hydration', entry.hydration ? entry.hydration + ' L' : '')}
-                    ${gridDetail('Muscle Soreness', entry.soreness ? entry.soreness + '/10' : '')}
-                    ${gridDetail('Mood', entry.mood ? entry.mood + '/10' : '')}
-                    ${gridDetail('Perceived Stress', entry.stress ? entry.stress + '/10' : '')}
-                    ${gridDetail('Fatigue', entry.fatigue ? entry.fatigue + '/10' : '')}
-                    ${gridDetail('Session Duration', entry.duration ? entry.duration + ' min' : '')}
-                    ${gridDetail('Session RPE', entry.rpe ? entry.rpe + '/10' : '')}
-                    ${gridDetail('Session Load', load !== null ? load + ' AU' : '')}
-                    ${gridDetail('Mental Focus', entry.focusRating ? entry.focusRating + '/10' : '')}
+                    <div class="detail-item">
+                        <div class="detail-label">Session Type</div>
+                        <div class="detail-value">${entry.sessionType || 'N/A'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Weather</div>
+                        <div class="detail-value">${weatherEmoji[entry.weather] || ''} ${entry.weather || 'N/A'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Temperature</div>
+                        <div class="detail-value stat">${entry.temperature ? entry.temperature + '°C' : 'N/A'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Sleep</div>
+                        <div class="detail-value stat">${entry.sleep ? entry.sleep + ' hrs' : 'N/A'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Hydration</div>
+                        <div class="detail-value stat">${entry.hydration ? entry.hydration + 'L' : 'N/A'}</div>
+                    </div>
+                    ${matchDetails}
                 </div>
-                ${goalBlock(1, entry.goal1, entry.goal1Strategy, entry.goal1Score)}
-                ${goalBlock(2, entry.goal2, entry.goal2Strategy, entry.goal2Score)}
-                ${detail('✨ Highlight / Evidence', entry.highlight)}
-                ${detail('💡 Key Lesson Learned', entry.lesson)}
-                ${detail('🛡️ Determination & Resilience', entry.resilience)}
-                ${distractionTable(entry.distractions)}
-                ${detail('📋 Coach Feedback / Debrief Notes', entry.coachNotes)}
-                ${detail("➡️ Target Focus for Tomorrow's Session", entry.tomorrowFocus)}
-                ${entry.lastEditedBy ? detail('✏️ Last edited by', entry.lastEditedBy + (entry.lastEditedAt ? ' on ' + new Date(entry.lastEditedAt).toLocaleDateString('en-NZ') : '')) : ''}
+                ${entry.sessionDetails ? `
+                    <div class="detail-item" style="margin-bottom: 10px;">
+                        <div class="detail-label">Session Details</div>
+                        <div class="detail-value">${entry.sessionDetails}</div>
+                    </div>
+                ` : ''}
+                ${entry.notes ? `
+                    <div class="detail-item" style="margin-bottom: 10px;">
+                        <div class="detail-label">Notes</div>
+                        <div class="detail-value">${entry.notes}</div>
+                    </div>
+                ` : ''}
+                ${performanceDetails}
                 <div class="btn-group">
                     <button class="edit-btn">✏️ Edit</button>
-                    ${options.admin ? '' : '<button class="delete-btn">🗑️ Delete</button>'}
+                    <button class="delete-btn">🗑️ Delete</button>
                 </div>
             </div>
         </div>
@@ -207,6 +345,8 @@ export function createEntryCard(entry, options = {}) {
 
 // Toggle entry expansion
 window.toggleEntryExpand = function(key) {
-    const card = document.querySelector(`[data-entry-key="${CSS.escape(key)}"]`);
-    if (card) card.classList.toggle('expanded');
+    const card = document.querySelector(`[data-entry-key="${key}"]`);
+    if (card) {
+        card.classList.toggle('expanded');
+    }
 };
