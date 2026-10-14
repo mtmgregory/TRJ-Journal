@@ -4,27 +4,220 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Court Craft Journal</title>
-    
-    <!-- Modular CSS Files -->
+
     <link rel="stylesheet" href="base.css">
     <link rel="stylesheet" href="auth.css">
     <link rel="stylesheet" href="layout.css">
     <link rel="stylesheet" href="forms.css">
     <link rel="stylesheet" href="history.css">
-    <link rel="stylesheet" href="insights.css">
     <link rel="stylesheet" href="toast.css">
-   
+
+    <style>
+        /* ── Admin panel strip ────────────────────────────────────────────── */
+        #adminPanel {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            background: #0f172a;
+            border-top: 2px solid #334155;
+            padding: 0.625rem 1.5rem;
+        }
+
+        #adminPanel span.admin-label {
+            color: #94a3b8;
+            font-size: 0.8125rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-weight: 500;
+        }
+
+        .admin-btn {
+            background: #334155;
+            color: white;
+            border: 1px solid #475569;
+            padding: 0.4rem 0.875rem;
+            border-radius: 0.375rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 120ms;
+            margin: 0;
+            width: auto;
+        }
+
+        .admin-btn:hover { background: #475569; }
+
+        #adminBadge {
+            display: none;
+            background: #f59e0b;
+            color: #0f172a;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.2rem 0.5rem;
+            border-radius: 9999px;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        /* ── Add Player modal ─────────────────────────────────────────────── */
+        #addPlayerModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,0.6);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        #addPlayerModal.open { display: flex; }
+
+        .modal-box {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 20px 25px -5px rgba(15,23,42,0.2);
+            padding: 2rem;
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .modal-box h3 {
+            margin-bottom: 0.25rem;
+            font-size: 1.1rem;
+            color: #0f172a;
+        }
+
+        .modal-box p.modal-hint {
+            font-size: 0.8125rem;
+            color: #64748b;
+            margin-bottom: 1.25rem;
+            line-height: 1.55;
+        }
+
+        .modal-box label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #475569;
+            margin-bottom: 0.25rem;
+            margin-top: 0.875rem;
+        }
+
+        .modal-box input[type="text"],
+        .modal-box input[type="email"] {
+            width: 100%;
+            padding: 0.6rem 0.875rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            font-size: 0.9375rem;
+            background: #f8fafc;
+            color: #0f172a;
+            margin-bottom: 0;
+        }
+
+        .modal-box input:focus {
+            border-color: #1e293b;
+            outline: none;
+            background: white;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            justify-content: flex-end;
+        }
+
+        .modal-cancel {
+            background: white;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0;
+            width: auto;
+        }
+
+        .modal-cancel:hover { background: #f1f5f9; }
+
+        .modal-save {
+            background: #1e293b;
+            color: white;
+            border: none;
+            padding: 0.5rem 1.25rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0;
+            width: auto;
+        }
+
+        .modal-save:hover { background: #334155; }
+
+        /* Player list inside modal */
+        #playerListContainer {
+            margin-top: 1.25rem;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1rem;
+        }
+
+        #playerListContainer h4 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #94a3b8;
+            margin-bottom: 0.625rem;
+        }
+
+        .player-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.4rem 0.625rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            color: #334155;
+            background: #f8fafc;
+            margin-bottom: 0.375rem;
+        }
+
+        .player-row span { font-family: monospace; font-size: 0.75rem; color: #94a3b8; }
+
+        .player-remove {
+            background: none;
+            border: none;
+            color: #dc2626;
+            cursor: pointer;
+            font-size: 0.8125rem;
+            padding: 0;
+            margin: 0;
+            width: auto;
+            line-height: 1;
+        }
+
+        .player-remove:hover { background: none; color: #991b1b; }
+    </style>
 </head>
 <body>
-    <!-- Authentication Screen -->
+
+    <!-- ── Authentication Screen ──────────────────────────────────────────── -->
     <div id="authScreen" class="auth-screen">
         <div class="auth-container">
             <div class="auth-header">
-                <h1>🎾 Court Craft Journal</h1>
+                <h1>Court Craft Journal</h1>
                 <p>Track your squash performance and improve your game</p>
             </div>
-            
-            <!-- Login Form -->
+
             <div id="loginForm" class="auth-form">
                 <h2>Welcome Back</h2>
                 <form onsubmit="handleLogin(event)">
@@ -40,12 +233,11 @@
                     <button type="submit" class="auth-btn">Log In</button>
                 </form>
                 <p class="auth-toggle">
-                    Don't have an account? 
+                    Don't have an account?
                     <a href="#" onclick="toggleAuthMode(); return false;">Sign up</a>
                 </p>
             </div>
-            
-            <!-- Signup Form -->
+
             <div id="signupForm" class="auth-form" style="display: none;">
                 <h2>Create Account</h2>
                 <form onsubmit="handleSignup(event)">
@@ -65,281 +257,138 @@
                     <button type="submit" class="auth-btn">Sign Up</button>
                 </form>
                 <p class="auth-toggle">
-                    Already have an account? 
+                    Already have an account?
                     <a href="#" onclick="toggleAuthMode(); return false;">Log in</a>
                 </p>
             </div>
         </div>
     </div>
 
-    <!-- Main Application (hidden until logged in) -->
+    <!-- ── Main Application ───────────────────────────────────────────────── -->
     <div id="mainApp" style="display: none;">
         <div class="container">
+
             <div class="header">
-                <h1>🏋️ Daily Sports Performance Journal</h1>
+                <h1>Daily Sports Performance Journal</h1>
                 <p>Track your performance and discover what makes you succeed</p>
                 <div class="user-info">
                     <span id="userEmail"></span>
-                    <button onclick="handleLogout()" class="logout-btn">Logout</button>
+                    <span id="adminBadge">Admin</span>
+                    <button onclick="handleLogout()" class="logout-btn">Log out</button>
                 </div>
+            </div>
+
+            <!-- Admin Panel -->
+            <div id="adminPanel">
+                <span class="admin-label">🛡 Admin</span>
+                <button class="admin-btn" onclick="loadAllUsersEntries()">
+                    👁 View All Players
+                </button>
+                <button class="admin-btn" onclick="openAddPlayerModal()">
+                    ➕ Manage Players
+                </button>
+                <button class="admin-btn" onclick="if(window.loadHistory) loadHistory()">
+                    ↩ My View
+                </button>
             </div>
 
             <div class="tabs">
-                <div class="tab active" onclick="switchTab('journal')">📝 New Entry</div>
-                <div class="tab" onclick="switchTab('history')">📚 History</div>
-                <div class="tab" onclick="switchTab('insights')">📊 Insights</div>
+                <div class="tab active" onclick="switchTab('journal')">New Entry</div>
+                <div class="tab" onclick="switchTab('history')">History</div>
             </div>
 
             <div class="content">
+
+                <!-- Journal Form -->
                 <div id="journal" class="view active">
                     <div class="quick-actions">
-                        <button class="quick-btn" onclick="clearForm()">🗑️ Clear Form</button>
+                        <button class="quick-btn" onclick="clearForm()">Clear Form</button>
                     </div>
-                    
+
                     <div class="journal-section">
-                        <h2>📅 Date and Session Type</h2>
-                        <label for="entryDate">Date of Session:</label>
+                        <h2>Date</h2>
+                        <label for="entryDate">Date of Session</label>
                         <input type="date" id="entryDate" required>
                         <input type="hidden" id="editingKey">
+                        <input type="hidden" id="sessionTypeSelect" value="Match Day">
+                        <input type="hidden" id="sessionType" value="Match Day">
+                    </div>
 
-                        <label for="sessionTypeSelect">Overall Session Type:</label>
-                        <select id="sessionTypeSelect" onchange="updateSessionType()">
-                            <option value="">Select Type</option>
-                            <option value="Match Day">Match Play</option>
-                            <option value="Training">Training Session</option>
-                            <option value="Recovery">Recovery Session</option>
-                        </select>
-                    </div>
-                    
-                    <div class="journal-section">
-                        <h2>☀️ Weather & Environment</h2>
-                        <label for="weatherCondition">Condition:</label>
-                        <select id="weatherCondition">
-                            <option value="sunny">☀️ Sunny</option>
-                            <option value="cloudy">☁️ Cloudy</option>
-                            <option value="rainy">🌧️ Rainy</option>
-                            <option value="snowy">❄️ Snowy</option>
-                            <option value="indoor">🏢 Indoor (Controlled)</option>
-                        </select>
-                        
-                        <label for="temperature">Temperature (°C):</label>
-                        <input type="number" id="temperature" placeholder="e.g., 22">
-                        
-                        <label for="surface">Playing Surface/Area:</label>
-                        <input type="text" id="surface" placeholder="e.g., Turf, Track, Weight Room">
-                    </div>
-                    
-                    <div class="journal-section" id="nutritionSection">
-                        <h2>🎯 Nutrition & Recovery</h2>
-                        <label for="preWorkoutMeal">Pre-Workout Meal/Snack:</label>
-                        <textarea id="preWorkoutMeal" placeholder="What did you eat and when?"></textarea>
-                        
-                        <label for="hydration">Hydration (Liters):</label>
-                        <input type="number" id="hydration" step="0.1" placeholder="e.g., 2.5">
-
-                        <label for="sleepHours">Sleep Hours Last Night:</label>
-                        <input type="number" id="sleepHours" step="0.5" placeholder="e.g., 7.5">
-                    </div>
-                    
                     <div class="journal-section" id="exerciseSection">
-                        <h2>🏃 Exercise & Performance</h2>
-                        
-                        <input type="hidden" id="sessionType" onchange="toggleMatchFields()">
+                        <h2>Exercise &amp; Performance</h2>
 
-                        <label for="sessionDetails">Details & Metrics:</label>
-                        <textarea id="sessionDetails" placeholder="Specific exercises, sets, reps, distance, time, and heart rate data."></textarea>
-                        
-                        <label for="sessionRating">Overall Session Rating (1-Poor to 5-Excellent):</label>
-                        <input type="number" id="sessionRating" min="1" max="5" placeholder="e.g., 4" required>
+                        <label for="sessionDetails">Pre-Match Preparation</label>
+                        <p class="field-subtext">Record your readiness going into this session — sleep quality and duration, nutrition and hydration, visualisation or mental prep, and warm-up routine.</p>
+                        <textarea id="sessionDetails" placeholder="e.g. 8hrs sleep, oats and banana pre-match, 10 min visualisation, full ghosting warm-up..."></textarea>
 
-                        <label for="notes">Notes on Feeling & Reflection:</label>
+                        <label for="notes">Notes on Feeling &amp; Reflection</label>
                         <textarea id="notes" placeholder="How did you feel mentally and physically? What went well or poorly?"></textarea>
 
-                        <div id="matchFields" style="display: none;">
-                            <h3>🎾 Match Details</h3>
-                            
-                            <label for="opponentName">Opponent Name:</label>
+                        <div id="matchFields">
+                            <h3>Match Details</h3>
+
+                            <label for="opponentName">Opponent Name</label>
                             <input type="text" id="opponentName" placeholder="Full Name">
-                            
-                            <div class="level-group">
-                                <div class="level-item">
-                                    <label for="opponentLevel">Opponent Level:</label>
-                                    <input type="text" id="opponentLevel" placeholder="Squash Levels">
-                                </div>
-                                <div class="level-item">
-                                    <label for="yourLevel">Your Level:</label>
-                                    <input type="text" id="yourLevel" placeholder="Squash Levels">
-                                </div>
-                            </div>
-                            <label for="gameScores">Game Scores:</label>
+
+                            <label for="gameScores">Game Scores</label>
                             <textarea id="gameScores" placeholder="11-4, 11-6, 11-6"></textarea>
 
-<h3>🎾 My Performance Analysis</h3>
-<p style="color: var(--gray-600); margin-bottom: 1.5rem; font-size: 0.9rem;">Rate each aspect from 1 (poor) to 10 (excellent) and add notes</p>
+                            <h3>My Performance Analysis</h3>
 
-<!-- Length and Width -->
-<label for="perfLengthWidthRating">Length and Width - Rating:</label>
-<select id="perfLengthWidthRating">
-    <option value="">Select Rating (1-10)</option>
-    <option value="10">⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐ 10 - Excellent</option>
-    <option value="9">⭐⭐⭐⭐⭐⭐⭐⭐⭐ 9 - Outstanding</option>
-    <option value="8">⭐⭐⭐⭐⭐⭐⭐⭐ 8 - Very Good</option>
-    <option value="7">⭐⭐⭐⭐⭐⭐⭐ 7 - Good</option>
-    <option value="6">⭐⭐⭐⭐⭐⭐ 6 - Above Average</option>
-    <option value="5">⭐⭐⭐⭐⭐ 5 - Average</option>
-    <option value="4">⭐⭐⭐⭐ 4 - Below Average</option>
-    <option value="3">⭐⭐⭐ 3 - Poor</option>
-    <option value="2">⭐⭐ 2 - Very Poor</option>
-    <option value="1">⭐ 1 - Terrible</option>
-</select>
+                            <label for="perfLengthWidth">Length and Width — Notes</label>
+                            <textarea id="perfLengthWidth" placeholder="Describe your target hitting, depth control, and court coverage..."></textarea>
 
-<label for="perfLengthWidth">Length and Width - Notes:</label>
-<textarea id="perfLengthWidth" placeholder="Describe your target hitting, depth control, and court coverage..."></textarea>
+                            <label for="perfHeightPace">Height and Pace — Notes</label>
+                            <textarea id="perfHeightPace" placeholder="Describe how you controlled the pace and used height..."></textarea>
 
-<!-- Height and Pace -->
-<label for="perfHeightPaceRating">Height and Pace - Rating:</label>
-<select id="perfHeightPaceRating">
-    <option value="">Select Rating (1-10)</option>
-    <option value="10">⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐ 10 - Excellent</option>
-    <option value="9">⭐⭐⭐⭐⭐⭐⭐⭐⭐ 9 - Outstanding</option>
-    <option value="8">⭐⭐⭐⭐⭐⭐⭐⭐ 8 - Very Good</option>
-    <option value="7">⭐⭐⭐⭐⭐⭐⭐ 7 - Good</option>
-    <option value="6">⭐⭐⭐⭐⭐⭐ 6 - Above Average</option>
-    <option value="5">⭐⭐⭐⭐⭐ 5 - Average</option>
-    <option value="4">⭐⭐⭐⭐ 4 - Below Average</option>
-    <option value="3">⭐⭐⭐ 3 - Poor</option>
-    <option value="2">⭐⭐ 2 - Very Poor</option>
-    <option value="1">⭐ 1 - Terrible</option>
-</select>
+                            <label for="perfControlT">Control and T Position — Notes</label>
+                            <textarea id="perfControlT" placeholder="Describe your court control and T position dominance..."></textarea>
 
-<label for="perfHeightPace">Height and Pace - Notes:</label>
-<textarea id="perfHeightPace" placeholder="Describe how you controlled the pace and used height..."></textarea>
+                            <label for="perfMovement">Movement — Notes</label>
+                            <textarea id="perfMovement" placeholder="Describe your efficiency, explosiveness, and balance..."></textarea>
 
-<!-- Control and T Position -->
-<label for="perfControlTRating">Control and T Position - Rating:</label>
-<select id="perfControlTRating">
-    <option value="">Select Rating (1-10)</option>
-    <option value="10">⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐ 10 - Excellent</option>
-    <option value="9">⭐⭐⭐⭐⭐⭐⭐⭐⭐ 9 - Outstanding</option>
-    <option value="8">⭐⭐⭐⭐⭐⭐⭐⭐ 8 - Very Good</option>
-    <option value="7">⭐⭐⭐⭐⭐⭐⭐ 7 - Good</option>
-    <option value="6">⭐⭐⭐⭐⭐⭐ 6 - Above Average</option>
-    <option value="5">⭐⭐⭐⭐⭐ 5 - Average</option>
-    <option value="4">⭐⭐⭐⭐ 4 - Below Average</option>
-    <option value="3">⭐⭐⭐ 3 - Poor</option>
-    <option value="2">⭐⭐ 2 - Very Poor</option>
-    <option value="1">⭐ 1 - Terrible</option>
-</select>
+                            <label for="perfAttack">Attack — Notes</label>
+                            <textarea id="perfAttack" placeholder="Describe how you attacked during your match..."></textarea>
 
-<label for="perfControlT">Control and T Position - Notes:</label>
-<textarea id="perfControlT" placeholder="Describe your court control and T position dominance..."></textarea>
-
-<!-- Movement -->
-<label for="perfMovementRating">Movement - Rating:</label>
-<select id="perfMovementRating">
-    <option value="">Select Rating (1-10)</option>
-    <option value="10">⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐ 10 - Excellent</option>
-    <option value="9">⭐⭐⭐⭐⭐⭐⭐⭐⭐ 9 - Outstanding</option>
-    <option value="8">⭐⭐⭐⭐⭐⭐⭐⭐ 8 - Very Good</option>
-    <option value="7">⭐⭐⭐⭐⭐⭐⭐ 7 - Good</option>
-    <option value="6">⭐⭐⭐⭐⭐⭐ 6 - Above Average</option>
-    <option value="5">⭐⭐⭐⭐⭐ 5 - Average</option>
-    <option value="4">⭐⭐⭐⭐ 4 - Below Average</option>
-    <option value="3">⭐⭐⭐ 3 - Poor</option>
-    <option value="2">⭐⭐ 2 - Very Poor</option>
-    <option value="1">⭐ 1 - Terrible</option>
-</select>
-
-<label for="perfMovement">Movement - Notes:</label>
-<textarea id="perfMovement" placeholder="Describe your efficiency, explosiveness, and balance..."></textarea>
-
-<!-- Attack -->
-<label for="perfAttackRating">Attack - Rating:</label>
-<select id="perfAttackRating">
-    <option value="">Select Rating (1-10)</option>
-    <option value="10">⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐ 10 - Excellent</option>
-    <option value="9">⭐⭐⭐⭐⭐⭐⭐⭐⭐ 9 - Outstanding</option>
-    <option value="8">⭐⭐⭐⭐⭐⭐⭐⭐ 8 - Very Good</option>
-    <option value="7">⭐⭐⭐⭐⭐⭐⭐ 7 - Good</option>
-    <option value="6">⭐⭐⭐⭐⭐⭐ 6 - Above Average</option>
-    <option value="5">⭐⭐⭐⭐⭐ 5 - Average</option>
-    <option value="4">⭐⭐⭐⭐ 4 - Below Average</option>
-    <option value="3">⭐⭐⭐ 3 - Poor</option>
-    <option value="2">⭐⭐ 2 - Very Poor</option>
-    <option value="1">⭐ 1 - Terrible</option>
-</select>
-
-<label for="perfAttack">Attack - Notes:</label>
-<textarea id="perfAttack" placeholder="Describe how you attacked during your match..."></textarea>
-
-<!-- Hitting to Space -->
-<label for="perfHittingToSpaceRating">Hitting to Space - Rating:</label>
-<select id="perfHittingToSpaceRating">
-    <option value="">Select Rating (1-10)</option>
-    <option value="10">⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐ 10 - Excellent</option>
-    <option value="9">⭐⭐⭐⭐⭐⭐⭐⭐⭐ 9 - Outstanding</option>
-    <option value="8">⭐⭐⭐⭐⭐⭐⭐⭐ 8 - Very Good</option>
-    <option value="7">⭐⭐⭐⭐⭐⭐⭐ 7 - Good</option>
-    <option value="6">⭐⭐⭐⭐⭐⭐ 6 - Above Average</option>
-    <option value="5">⭐⭐⭐⭐⭐ 5 - Average</option>
-    <option value="4">⭐⭐⭐⭐ 4 - Below Average</option>
-    <option value="3">⭐⭐⭐ 3 - Poor</option>
-    <option value="2">⭐⭐ 2 - Very Poor</option>
-    <option value="1">⭐ 1 - Terrible</option>
-</select>
-
-<label for="perfHittingToSpace">Hitting to Space - Notes:</label>
-<textarea id="perfHittingToSpace" placeholder="Describe your spatial awareness and shot placement..."></textarea>
+                            <label for="perfHittingToSpace">Hitting to Space — Notes</label>
+                            <textarea id="perfHittingToSpace" placeholder="Describe your spatial awareness and shot placement..."></textarea>
 
                             <h3>Opponent Analysis</h3>
-                            <label for="oppStrengths">Opponent's Strengths:</label>
-                            <textarea id="oppStrengths" placeholder="Describe strengths of your opponents"></textarea>
 
-                            <label for="oppWeaknesses">Opponent's Weaknesses:</label>
-                            <textarea id="oppWeaknesses" placeholder="Describe weaknesses of your opponent"></textarea>
+                            <label for="oppStrengths">Opponent's Strengths</label>
+                            <textarea id="oppStrengths" placeholder="Describe the strengths of your opponent"></textarea>
 
-                            <label for="matchSummary">Summary and Comments:</label>
+                            <label for="oppWeaknesses">Opponent's Weaknesses</label>
+                            <textarea id="oppWeaknesses" placeholder="Describe the weaknesses of your opponent"></textarea>
+
+                            <label for="matchSummary">Summary and Comments</label>
                             <textarea id="matchSummary" placeholder="Overall reflection on the match"></textarea>
-                            
-                            <label for="oneThingToWorkOn">One Thing to Work On:</label>
+
+                            <label for="oneThingToWorkOn">One Thing to Work On</label>
                             <textarea id="oneThingToWorkOn" placeholder="The single most important technical or tactical element to practice next."></textarea>
-                        </div>   
+                        </div>
                     </div>
 
-                    <button onclick="saveEntry()" id="saveBtn">💾 Save Journal Entry</button>
-                    <button onclick="cancelEdit()" id="cancelBtn" class="btn-secondary" style="display: none;">❌ Cancel Edit</button>
+                    <button onclick="saveEntry()" id="saveBtn">Save Journal Entry</button>
+                    <button onclick="cancelEdit()" id="cancelBtn" class="btn-secondary" style="display: none;">Cancel Edit</button>
                 </div>
 
+                <!-- History View -->
                 <div id="history" class="view">
                     <div class="export-section">
-                        <button onclick="showImportDialog()">📥 Import Diary Entries</button>
-                        <button onclick="exportToCSV()">📊 Export to CSV</button>
+                        <button onclick="showImportDialog()">Import Entries</button>
+                        <button onclick="exportToCSV()">Export to CSV</button>
                     </div>
-                    
-                                    
+
                     <div class="filter-section">
-                        <h2>🔍 Search & Filter</h2>
-                        
+                        <h2>Search &amp; Filter</h2>
                         <div class="search-box">
-    <label for="searchKeyword">Search:</label>
-    <input type="text" id="searchKeyword" placeholder="Search exercises, meals, notes..." oninput="debouncedSearch()">
-</div>
-                        
+                            <label for="searchKeyword">Search</label>
+                            <input type="text" id="searchKeyword" placeholder="Search entries..." oninput="debouncedSearch()">
+                        </div>
                         <div class="filter-row">
                             <div class="filter-group">
-                                <label for="filterRating">Rating:</label>
-                                <select id="filterRating" onchange="loadHistory()">
-                                    <option value="">All Ratings</option>
-                                    <option value="5">⭐⭐⭐⭐⭐ Excellent (5)</option>
-                                    <option value="4">⭐⭐⭐⭐ Good (4)</option>
-                                    <option value="3">⭐⭐⭐ Average (3)</option>
-                                    <option value="2">⭐⭐ Poor (2)</option>
-                                    <option value="1">⭐ Very Poor (1)</option>
-                                </select>
-                            </div>
-                                                                             
-                            <div class="filter-group">
-                                <label for="dateRange">Date Range:</label>
+                                <label for="dateRange">Date Range</label>
                                 <select id="dateRange" onchange="loadHistory()">
                                     <option value="all">All Time</option>
                                     <option value="7">Last 7 Days</option>
@@ -350,42 +399,58 @@
                                 </select>
                             </div>
                         </div>
-                        
                         <div class="sort-controls">
-                            <label for="sortBy">Sort by:</label>
+                            <label for="sortBy">Sort by</label>
                             <select id="sortBy" onchange="loadHistory()">
                                 <option value="date-desc">Date (Newest First)</option>
                                 <option value="date-asc">Date (Oldest First)</option>
-                                <option value="rating-desc">Rating (Highest First)</option>
-                                <option value="rating-asc">Rating (Lowest First)</option>
-                                <option value="sleep-desc">Sleep (Most First)</option>
-                                <option value="sleep-asc">Sleep (Least First)</option>
                             </select>
                         </div>
                     </div>
+
                     <div id="entriesContainer"></div>
                 </div>
 
-                <div id="insights" class="view">
-                    <div class="stats-grid" id="statsGrid"></div>
-                    <div id="insightsContainer"></div>
-                </div>
             </div>
         </div>
     </div>
 
-  
-    <!-- Load all JavaScript modules -->
+    <!-- ── Add Player Modal ───────────────────────────────────────────────── -->
+    <div id="addPlayerModal">
+        <div class="modal-box">
+            <h3>➕ Manage Players</h3>
+            <p class="modal-hint">
+                Add each player once using their <strong>Firebase UID</strong> and email.<br>
+                Find UIDs in: <strong>Firebase Console → Authentication → Users</strong>.
+            </p>
+
+            <label for="newPlayerEmail">Player Email</label>
+            <input type="email" id="newPlayerEmail" placeholder="player@email.com">
+
+            <label for="newPlayerUID">Firebase UID</label>
+            <input type="text" id="newPlayerUID" placeholder="e.g. abc123XYZ...">
+
+            <div class="modal-actions">
+                <button class="modal-cancel" onclick="closeAddPlayerModal()">Close</button>
+                <button class="modal-save" onclick="addPlayerToIndex()">Add Player</button>
+            </div>
+
+            <div id="playerListContainer">
+                <h4>Registered Players</h4>
+                <div id="playerList">Loading…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Modules -->
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="auth.js"></script>
     <script type="module" src="firestore-service.js"></script>
     <script type="module" src="ui-helpers.js"></script>
     <script type="module" src="form-handlers.js"></script>
     <script type="module" src="history.js"></script>
-    <script type="module" src="insights.js"></script>
     <script type="module" src="import.js"></script>
     <script type="module" src="export.js"></script>
     <script type="module" src="app.js"></script>
-    
 </body>
 </html>

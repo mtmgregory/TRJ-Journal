@@ -2,94 +2,62 @@
    FORM STYLES - Inputs, Buttons, Sections
    =============================================== */
 
-/* Form Sections - Enhanced Visual Hierarchy */
+/* Form Sections */
 .journal-section {
-    background: var(--gray-50);
-    padding: var(--spacing-2xl);
+    background: white;
+    padding: var(--spacing-xl) var(--spacing-xl);
     border-radius: var(--radius-lg);
-    margin-bottom: var(--spacing-2xl);
-    box-shadow: var(--shadow-sm);
-    transition: all var(--transition-base);
+    margin-bottom: var(--spacing-xl);
     border: 1px solid var(--gray-200);
-    position: relative;
+    border-left: 3px solid var(--gray-300);
+    transition: border-color var(--transition-fast);
 }
 
-.journal-section::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: linear-gradient(180deg, var(--primary) 0%, var(--primary-light) 100%);
-    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
-    opacity: 0;
-    transition: opacity var(--transition-base);
-}
-
-.journal-section:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
-}
-
-.journal-section:hover::before {
-    opacity: 1;
+.journal-section:focus-within {
+    border-left-color: var(--primary);
 }
 
 .journal-section h2,
 .journal-section h3 {
-    color: var(--primary);
-    margin-bottom: var(--spacing-xl);
-    padding-bottom: var(--spacing-md);
-    border-bottom: 3px solid var(--primary-light);
+    color: var(--gray-900);
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--gray-200);
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
     display: flex;
     align-items: center;
-    gap: var(--spacing-md);
-    font-size: 1.75rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
+    gap: var(--spacing-sm);
 }
 
 .journal-section h3 {
-    font-size: 1.35rem;
-    color: var(--gray-800);
-    border-bottom-width: 2px;
-    margin-top: var(--spacing-2xl);
+    font-size: 1rem;
+    color: var(--gray-700);
+    margin-top: var(--spacing-xl);
 }
 
 /* Section Dividers */
 .section-divider {
-    height: 2px;
-    background: linear-gradient(90deg, transparent 0%, var(--gray-300) 50%, transparent 100%);
-    margin: var(--spacing-2xl) 0;
-    position: relative;
-}
-
-.section-divider::after {
-    content: '◆';
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    padding: 0 var(--spacing-md);
-    color: var(--gray-400);
-    font-size: 0.75rem;
+    height: 1px;
+    background: var(--gray-200);
+    margin: var(--spacing-xl) 0;
 }
 
 /* Form Labels */
 label {
     display: block;
-    margin-top: var(--spacing-lg);
-    margin-bottom: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
     font-weight: 600;
-    color: var(--gray-700);
-    font-size: 0.875rem;
+    color: var(--gray-600);
+    font-size: 0.8125rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* Form Inputs - FIXED WIDTH TO PREVENT OVERFLOW */
+/* Form Inputs */
 input[type="text"],
 input[type="number"],
 input[type="date"],
@@ -99,232 +67,196 @@ textarea,
 select {
     display: block;
     width: 100%;
-    max-width: 100%; /* Prevent overflow */
-    padding: 0.75rem 2.5rem 0.75rem 1rem; /* Right padding for dropdown arrow */
-    margin-bottom: var(--spacing-md);
-    border: 2px solid var(--gray-200);
+    max-width: 100%;
+    padding: 0.625rem 1rem;
+    margin-bottom: var(--spacing-sm);
+    border: 1px solid var(--gray-300);
     border-radius: var(--radius-md);
-    font-size: 1rem;
-    transition: all var(--transition-base);
-    background: white;
-    font-family: inherit;
-    box-sizing: border-box; /* Ensure padding is included in width */
+    font-size: 0.9375rem;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    background: var(--gray-50);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    box-sizing: border-box;
+    color: var(--gray-900);
 }
 
-/* Adjust padding for inputs that don't need right padding for arrow */
-input[type="text"],
-input[type="number"],
-input[type="date"],
-input[type="email"],
-input[type="password"] {
-    padding: 0.75rem 1rem;
-}
-
-input:focus,
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
 textarea:focus,
 select:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.07);
     outline: none;
     background: white;
-    transform: translateY(-1px);
+    transform: none;
 }
 
 textarea {
     resize: vertical;
-    min-height: 120px;
-    line-height: 1.8;
-    font-size: 1rem;
+    min-height: 100px;
+    line-height: 1.7;
+    font-size: 0.9375rem;
 }
 
 select {
     cursor: pointer;
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234b5563' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    padding-right: 2.5rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 1rem center;
     font-weight: 500;
 }
 
-/* Buttons - Enhanced with Ripple Effect */
+/* Buttons */
 button {
     background: var(--primary);
     color: white;
     border: none;
-    padding: 0.875rem 1.5rem;
+    padding: 0.625rem 1.25rem;
     border-radius: var(--radius-md);
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    transition: all var(--transition-base);
+    transition: background var(--transition-fast);
     margin-top: var(--spacing-md);
-    box-shadow: var(--shadow-sm);
-    font-family: inherit;
-    position: relative;
-    overflow: hidden;
-    width: auto; /* Allow buttons to size naturally */
-    max-width: 100%; /* But prevent overflow */
-}
-
-button::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
-}
-
-button:active::before {
-    width: 300px;
-    height: 300px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    width: auto;
+    max-width: 100%;
+    letter-spacing: 0.01em;
 }
 
 button:hover {
-    background: var(--primary-dark);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    background: var(--primary-light);
+    transform: none;
+    box-shadow: none;
 }
 
 button:active {
-    transform: translateY(0);
+    background: var(--primary-dark);
+    transform: none;
 }
 
 button:disabled {
     background: var(--gray-300);
+    color: var(--gray-500);
     cursor: not-allowed;
-    transform: none;
 }
 
 .btn-secondary {
-    background: var(--gray-600);
-    margin-left: var(--spacing-md);
+    background: white;
+    color: var(--gray-700);
+    border: 1px solid var(--gray-300);
+    margin-left: var(--spacing-sm);
 }
 
 .btn-secondary:hover {
-    background: var(--gray-700);
+    background: var(--gray-100);
+    color: var(--gray-900);
 }
 
 .edit-btn {
-    background: var(--success);
-    padding: 0.625rem 1rem;
-    font-size: 0.875rem;
+    background: white;
+    color: var(--gray-800);
+    border: 1px solid var(--gray-300);
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
 }
 
 .edit-btn:hover {
-    background: #059669;
+    background: var(--gray-100);
+    border-color: var(--gray-400);
 }
 
 .delete-btn {
-    background: var(--danger);
-    padding: 0.625rem 1rem;
-    font-size: 0.875rem;
+    background: white;
+    color: var(--danger);
+    border: 1px solid var(--gray-300);
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
 }
 
 .delete-btn:hover {
-    background: #dc2626;
+    background: #fef2f2;
+    border-color: var(--danger);
 }
 
 .btn-group {
     display: flex;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
     margin-top: var(--spacing-md);
     flex-wrap: wrap;
 }
 
-.btn-group button {
-    margin: 0;
-}
-
-/* Level Group for Match Fields */
-.level-group {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--spacing-lg);
-    margin-bottom: var(--spacing-lg);
-}
-
-.level-item {
-    display: flex;
-    flex-direction: column;
-}
-
-.level-item input[type="text"] {
-    margin-bottom: 0;
-    font-family: 'Courier New', monospace;
-    font-weight: 600;
-    font-size: 1.1rem;
-}
-
-.level-item label {
-    margin-top: 0;
-    margin-bottom: var(--spacing-sm);
-}
+.btn-group button { margin: 0; }
 
 /* Loading States */
 .loading-spinner {
     display: inline-block;
-    width: 1.25rem;
-    height: 1.25rem;
-    border: 3px solid var(--gray-200);
+    width: 1.125rem;
+    height: 1.125rem;
+    border: 2px solid var(--gray-200);
     border-top-color: var(--primary);
     border-radius: var(--radius-full);
-    animation: spin 1s linear infinite;
-    margin-right: var(--spacing-md);
+    animation: spin 0.8s linear infinite;
+    margin-right: var(--spacing-sm);
 }
+
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .loading-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.45);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 9999;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(2px);
 }
 
 .loading-content {
     background: white;
-    padding: var(--spacing-2xl);
+    padding: var(--spacing-xl);
     border-radius: var(--radius-xl);
     text-align: center;
     box-shadow: var(--shadow-xl);
-    min-width: 250px;
+    min-width: 240px;
+    border: 1px solid var(--gray-200);
 }
 
-/* Session Type Badge */
+/* Session Type Badges */
 .session-type-badge {
     display: inline-block;
-    padding: 0.375rem 0.875rem;
-    border-radius: var(--radius-full);
-    font-size: 0.8rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.6875rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-left: var(--spacing-sm);
+    letter-spacing: 0.06em;
+    margin-left: var(--spacing-xs);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .session-type-badge.match {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    color: white;
+    /* Deep navy — distinct but not garish */
+    background: #1e3a5f;
+    color: #e2eaf4;
 }
 
 .session-type-badge.training {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    color: white;
+    /* Steel blue — clearly different from match */
+    background: #2d5282;
+    color: #ddeaf7;
 }
 
 .session-type-badge.recovery {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
+    /* Muted teal-grey — quieter third tier */
+    background: #2d4a4a;
+    color: #d1e6e6;
 }
 
 /* Responsive Forms */
@@ -333,26 +265,23 @@ button:disabled {
         padding: var(--spacing-lg);
         margin-bottom: var(--spacing-lg);
     }
-    
-    .journal-section h2 {
-        font-size: 1.5rem;
-    }
-    
-    .journal-section h3 {
-        font-size: 1.25rem;
-    }
-    
+
     button {
         width: 100%;
-        margin-left: 0;
+        margin-left: 0 !important;
         margin-top: var(--spacing-sm);
     }
-    
-    .btn-group {
-        flex-direction: column;
-    }
-    
-    .level-group {
-        grid-template-columns: 1fr;
-    }
+
+    .btn-group { flex-direction: column; }
+}
+
+/* Field subtext — helper copy beneath a label */
+.field-subtext {
+    font-size: 0.8125rem;
+    color: var(--gray-500);
+    line-height: 1.55;
+    margin-top: -0.125rem;
+    margin-bottom: var(--spacing-sm);
+    font-style: italic;
+    font-weight: 400;
 }
