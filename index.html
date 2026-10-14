@@ -97,10 +97,12 @@
                 <div class="tab active" onclick="switchTab('journal')">New entry</div>
                 <div class="tab" onclick="switchTab('history')">History</div>
                 <div class="tab" onclick="switchTab('insights')">Insights</div>
+                <div class="tab" id="adminTab" style="display: none;" onclick="switchTab('admin')">Admin</div>
             </div>
 
             <div class="content">
                 <div id="journal" class="view active">
+                    <div id="adminEditBanner" class="admin-edit-banner" style="display: none;"></div>
                     <div class="quick-actions">
                         <button class="quick-btn" onclick="clearForm()">Clear form</button>
                     </div>
@@ -109,6 +111,7 @@
                     <div class="journal-section">
                         <h2><span class="sec-num">1</span> Session Metadata &amp; Morning Recovery Audit</h2>
                         <input type="hidden" id="editingKey">
+                        <input type="hidden" id="editingOwner">
 
                         <label for="athleteName">Athlete name</label>
                         <input type="text" id="athleteName" placeholder="Full name">
@@ -316,6 +319,10 @@
                     <div class="stats-grid" id="statsGrid"></div>
                     <div id="insightsContainer"></div>
                 </div>
+
+                <div id="admin" class="view">
+                    <div id="adminContent"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -331,6 +338,8 @@
     <script type="module" src="insights.js"></script>
     <script type="module" src="import.js"></script>
     <script type="module" src="export.js"></script>
+    <script type="module" src="admin-service.js"></script>
+    <script type="module" src="admin.js"></script>
     <script type="module" src="app.js"></script>
 </body>
 </html>

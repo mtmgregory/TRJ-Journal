@@ -2,6 +2,8 @@
 import { saveEntryToFirestore, saveDraftToFirestore, loadDraftFromFirestore, deleteDraftFromFirestore } from './firestore-service.js';
 import { showToast, esc } from './ui-helpers.js';
 import { FIELD_MAP } from './fields.js';
+import { saveEntryAsAdmin } from './admin-service.js';
+import { getCurrentUser } from './auth.js';
 
 let autoSaveTimer = null;
 let isSaving = false;
@@ -128,6 +130,7 @@ function validateEntry(entry) {
 // ---------- Save / clear / cancel ----------
 window.saveEntry = async function() {
     const editingKey = document.getElementById('editingKey')?.value;
+    const editingOwner = document.getElementById('editingOwner')?.value;
     const entry = getFormData();
 
     if (!entry.date || !entry.sessionType || !entry.focusRating) {
@@ -144,14 +147,19 @@ window.saveEntry = async function() {
     try {
         clearTimeout(autoSaveTimer);
         const key = editingKey || `entry:${Date.now()}`;
-        await saveEntryToFirestore(key, entry);
+        if (editingOwner) {
+            // an admin updating another athlete's entry
+            await saveEntryAsAdmin(editingOwner, editingKey, entry, getCurrentUser());
+        } else {
+            await saveEntryToFirestore(key, entry);
+        }
 
         showToast(editingKey ? '✅ Entry updated!' : '✅ Entry saved!', 'success');
 
         clearForm();
         await deleteDraftFromFirestore();
 
-        if (window.switchTab) window.switchTab('history');
+        if (window.switchTab) window.switchTab(editingOwner ? 'admin' : 'history');
     } catch (error) {
         console.error('Failed to save entry:', error);
         showToast('Error saving entry. Please try again.', 'error');
@@ -162,10 +170,15 @@ window.clearForm = function() {
     const form = document.querySelector('#journal');
     if (!form) return;
 
+    const wasAdminEdit = !!document.getElementById('editingOwner')?.value;
+
     // keep the date and athlete name so they don't need retyping
     form.querySelectorAll('input, textarea, select').forEach(input => {
         if (input.id !== 'entryDate' && input.id !== 'athleteName') input.value = '';
     });
+    // the name belongs to the athlete whose entry was edited, so don't carry it over
+    if (wasAdminEdit) document.getElementById('athleteName').value = '';
+    if (window.hideAdminEditBanner) window.hideAdminEditBanner();
     setDistractions([]);
 
     const editingKey = document.getElementById('editingKey');
@@ -252,7 +265,7 @@ window.switchTab = function(tabName) {
 
     const tabs = document.querySelectorAll('.tab');
     const views = document.querySelectorAll('.view');
-    const idx = { journal: 0, history: 1, insights: 2 }[tabName];
+    const idx = { journal: 0, history: 1, insights: 2, admin: 3 }[tabName];
     if (idx === undefined) return;
 
     if (tabs[idx]) tabs[idx].classList.add('active');
@@ -260,4 +273,5 @@ window.switchTab = function(tabName) {
 
     if (tabName === 'history' && window.loadHistory) window.loadHistory();
     if (tabName === 'insights' && window.loadInsights) window.loadInsights();
+    if (tabName === 'admin' && window.loadAdmin) window.loadAdmin();
 };

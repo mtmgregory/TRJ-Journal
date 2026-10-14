@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    // An admin is any account with a document at admins/{their user id}.
+    function isAdmin() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Admin list: you can only check your own status.
+    // Nobody can write here from the app. Add admins in the Firebase console.
+    match /admins/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
+    // Profile (email) used so admins can see who each athlete is.
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId)
+        && request.resource.data.email == request.auth.token.email;
+    }
+
+    // Journal entries: the athlete has full access.
+    // Admins can read all entries and update existing ones, but cannot create or delete.
+    match /users/{userId}/entries/{entryId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create, delete: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+    }
+
+    // Drafts and other personal data: athlete only.
+    match /users/{userId}/{subcollection}/{docId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Lets admins read every athlete's entries in one query.
+    match /{path=**}/entries/{entryId} {
+      allow read: if isAdmin();
+    }
+  }
+}

@@ -7,6 +7,7 @@ import { startAutoSave, loadDraft, setDistractions } from './form-handlers.js';
 import './history.js';
 import './insights.js';
 import './export.js';
+import './admin.js';
 
 // Global event delegation for dynamic content
 function setupEventDelegation() {
@@ -27,7 +28,9 @@ function setupEventDelegation() {
             e.preventDefault();
             e.stopPropagation();
             const key = editBtn.closest('.entry-card')?.dataset.entryKey;
-            if (key && window.editEntry) window.editEntry(key);
+            // cards in the Admin tab belong to other athletes and use keys starting "admin:"
+            if (key && key.startsWith('admin:')) { if (window.adminEditEntry) window.adminEditEntry(key); }
+            else if (key && window.editEntry) window.editEntry(key);
             return;
         }
 

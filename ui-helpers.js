@@ -137,7 +137,7 @@ function distractionTable(list) {
 }
 
 // Create entry card HTML
-export function createEntryCard(entry) {
+export function createEntryCard(entry, options = {}) {
     const parts = String(entry.date || '').split('-');
     const date = parts.length === 3 ? new Date(parts[0], parts[1] - 1, parts[2]) : new Date(entry.date);
     const formattedDate = date.toLocaleDateString('en-US', {
@@ -151,7 +151,7 @@ export function createEntryCard(entry) {
         <div class="entry-header-info">
             <div class="entry-date-row">
                 <span class="entry-date">${esc(formattedDate)}</span>
-                ${entry.athleteName ? `<span class="opponent-badge">👤 ${esc(entry.athleteName)}</span>` : ''}
+                ${(options.ownerLabel || entry.athleteName) ? `<span class="opponent-badge">👤 ${esc(options.ownerLabel || entry.athleteName)}</span>` : ''}
             </div>
             <div class="entry-badges-row">
                 ${getSessionTypeBadge(entry.sessionType)}
@@ -195,9 +195,10 @@ export function createEntryCard(entry) {
                 ${distractionTable(entry.distractions)}
                 ${detail('📋 Coach Feedback / Debrief Notes', entry.coachNotes)}
                 ${detail("➡️ Target Focus for Tomorrow's Session", entry.tomorrowFocus)}
+                ${entry.lastEditedBy ? detail('✏️ Last edited by', entry.lastEditedBy + (entry.lastEditedAt ? ' on ' + new Date(entry.lastEditedAt).toLocaleDateString('en-NZ') : '')) : ''}
                 <div class="btn-group">
                     <button class="edit-btn">✏️ Edit</button>
-                    <button class="delete-btn">🗑️ Delete</button>
+                    ${options.admin ? '' : '<button class="delete-btn">🗑️ Delete</button>'}
                 </div>
             </div>
         </div>
